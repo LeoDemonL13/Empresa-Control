@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.NexusObsidianControl" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/brand_500</item>
+        <item name="colorPrimaryDark">@color/brand_600</item>
+        <item name="colorAccent">@color/brand_500</item>
+        <item name="android:windowBackground">@color/obsidian_main</item>
+        <item name="android:textColorPrimary">@color/texto_claro</item>
+        <item name="android:textColorSecondary">@color/obsidian_muted</item>
+        <item name="android:statusBarColor">@color/obsidian_main</item>
+        <item name="android:navigationBarColor">@color/obsidian_main</item>
+    </style>
+
+    <style name="Theme.NexusObsidianControl.Bloqueo">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowBackground">@color/brand_950</item>
+    </style>
+</resources>

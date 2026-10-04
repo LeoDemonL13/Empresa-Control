@@ -13,12 +13,22 @@ def refrescar_politicas(cliente: ClienteAPI) -> dict:
 
 def enviar_uso_acumulado(cliente: ClienteAPI) -> bool:
     estado = cache_local.cargar()
-    entradas = [
-        {'ejecutable': ejecutable, 'segundos': segundos, 'sesiones': estado['sesiones'].get(ejecutable, 0)}
-        for ejecutable, segundos in estado['acumulado'].items()
-        if segundos > 0
-    ]
+    entradas = []
+    for ejecutable, segundos in estado['acumulado'].items():
+        enviado_previo = estado['enviado'].get(ejecutable, 0)
+        delta_segundos = max(0, segundos - enviado_previo)
+        sesiones = estado['sesiones'].get(ejecutable, 0)
+        if delta_segundos == 0 and sesiones == 0:
+            continue
+        entradas.append({'ejecutable': ejecutable, 'segundos': delta_segundos, 'sesiones': sesiones})
+
     if not entradas:
         return False
+
     cliente.enviar_uso(estado['fecha'], entradas)
+
+    for entrada in entradas:
+        estado['enviado'][entrada['ejecutable']] = estado['acumulado'][entrada['ejecutable']]
+        estado['sesiones'][entrada['ejecutable']] = 0
+    cache_local.guardar(estado)
     return True

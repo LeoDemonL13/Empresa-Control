@@ -12,6 +12,7 @@ class MetricaSocial(db.Model):
     interacciones = db.Column(db.Integer, nullable=False, default=0, server_default='0')
     impresiones = db.Column(db.Integer, nullable=False, default=0, server_default='0')
     engagement = db.Column(db.Float, nullable=False, default=0, server_default='0')
+    origen = db.Column(db.String(20), nullable=False, default='manual', server_default='manual')
     actualizado_por = db.Column(db.String(80), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now_utc)
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now_utc, onupdate=_now_utc)

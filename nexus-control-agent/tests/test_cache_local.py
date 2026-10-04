@@ -10,6 +10,7 @@ def test_cargar_sin_archivo_devuelve_estado_vacio(tmp_path, monkeypatch):
     assert estado['politica_version'] == 0
     assert estado['politicas'] == {}
     assert estado['acumulado'] == {}
+    assert estado['enviado'] == {}
     assert estado['fecha'] == date.today().isoformat()
 
 
@@ -40,13 +41,15 @@ def test_cambio_de_dia_reinicia_el_acumulado(tmp_path, monkeypatch):
     ayer = (date.today() - timedelta(days=1)).isoformat()
     ruta.write_text(json.dumps({
         'politica_version': 2, 'politicas': {'juego.exe': {'estado': 'bloqueada'}},
-        'fecha': ayer, 'acumulado': {'juego.exe': 500}, 'sesiones': {'juego.exe': 3}, 'activos': ['juego.exe'],
+        'fecha': ayer, 'acumulado': {'juego.exe': 500}, 'enviado': {'juego.exe': 500},
+        'sesiones': {'juego.exe': 3}, 'activos': ['juego.exe'],
     }))
     monkeypatch.setattr(cache_local, '_RUTA', str(ruta))
 
     estado = cache_local.cargar()
     assert estado['fecha'] == date.today().isoformat()
     assert estado['acumulado'] == {}
+    assert estado['enviado'] == {}
     assert estado['sesiones'] == {}
     assert estado['politica_version'] == 2
     assert estado['politicas'] == {'juego.exe': {'estado': 'bloqueada'}}

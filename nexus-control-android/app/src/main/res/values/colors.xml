@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="obsidian_main">#0C0E12</color>
+    <color name="obsidian_sidebar">#1B0A0F</color>
+    <color name="obsidian_card">#161920</color>
+    <color name="obsidian_card_alt">#1C1F2B</color>
+    <color name="obsidian_line">#262A36</color>
+    <color name="obsidian_muted">#8A90A0</color>
+    <color name="brand_500">#EF1F2B</color>
+    <color name="brand_600">#DC1724</color>
+    <color name="brand_950">#24060B</color>
+    <color name="texto_claro">#F4F4F5</color>
+    <color name="blanco">#FFFFFF</color>
+</resources>

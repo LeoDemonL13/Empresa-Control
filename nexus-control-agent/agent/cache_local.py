@@ -14,6 +14,7 @@ def _vacio() -> dict:
         'politicas': {},
         'fecha': date.today().isoformat(),
         'acumulado': {},
+        'enviado': {},
         'sesiones': {},
         'activos': [],
     }
@@ -34,6 +35,7 @@ def cargar() -> dict:
     if estado.get('fecha') != date.today().isoformat():
         estado['fecha'] = date.today().isoformat()
         estado['acumulado'] = {}
+        estado['enviado'] = {}
         estado['sesiones'] = {}
 
     return estado

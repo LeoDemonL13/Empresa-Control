@@ -32,6 +32,37 @@ def test_crear_equipo_sin_nombre(client, admin):
     assert r.status_code == 400
 
 
+def test_crear_equipo_por_defecto_es_tipo_pc(client, admin):
+    r = client.post('/api/equipos', json={'nombre': 'PC-Recepcion'}, headers=_h(client, admin))
+    assert r.get_json()['tipo'] == 'pc'
+
+
+def test_crear_equipo_android(client, admin):
+    r = client.post('/api/equipos', json={'nombre': 'Telefono-Ventas', 'tipo': 'android'}, headers=_h(client, admin))
+    assert r.status_code == 201
+    assert r.get_json()['tipo'] == 'android'
+
+
+def test_crear_equipo_tipo_invalido(client, admin):
+    r = client.post('/api/equipos', json={'nombre': 'PC-X', 'tipo': 'tablet'}, headers=_h(client, admin))
+    assert r.status_code == 400
+
+
+def test_actualizar_tipo_de_equipo(client, admin):
+    h = _h(client, admin)
+    creado = client.post('/api/equipos', json={'nombre': 'PC-01'}, headers=h).get_json()
+    r = client.put(f"/api/equipos/{creado['id']}", json={'tipo': 'android'}, headers=h)
+    assert r.status_code == 200
+    assert r.get_json()['tipo'] == 'android'
+
+
+def test_actualizar_tipo_invalido(client, admin):
+    h = _h(client, admin)
+    creado = client.post('/api/equipos', json={'nombre': 'PC-01'}, headers=h).get_json()
+    r = client.put(f"/api/equipos/{creado['id']}", json={'tipo': 'reloj'}, headers=h)
+    assert r.status_code == 400
+
+
 def test_crear_equipo_con_categoria_nueva_la_autocrea(client, admin):
     r = client.post('/api/equipos', json={'nombre': 'PC-01', 'categoria': 'Ventas'}, headers=_h(client, admin))
     assert r.status_code == 201

@@ -15,9 +15,12 @@ def _formatear_duracion(segundos: int) -> str:
     return f'{segs} s'
 
 
+_ETIQUETA_TIPO_EQUIPO = {'pc': 'PC', 'android': 'Android'}
+
+
 def datos_general():
     columnas = [
-        'Equipo', 'Categoría', 'Usuario asignado', 'IP', 'MAC', 'Hostname',
+        'Equipo', 'Tipo', 'Categoría', 'Usuario asignado', 'IP', 'MAC', 'Hostname',
         'Sistema operativo', 'Agente', 'Estado', 'Alta',
     ]
     equipos = Equipo.query.filter_by(activo=True).order_by(Equipo.nombre.asc()).all()
@@ -25,6 +28,7 @@ def datos_general():
     for e in equipos:
         filas.append([
             e.nombre,
+            _ETIQUETA_TIPO_EQUIPO.get(e.tipo, e.tipo),
             e.categoria.nombre if e.categoria else 'Sin categoría',
             e.usuario_asignado or '—',
             e.ip or '—',

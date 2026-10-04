@@ -1,5 +1,6 @@
 from sqlalchemy import true
 
+from app.constants import TIPOS_EQUIPO
 from app.extensions import db
 from app.models._base import _now_utc
 
@@ -21,6 +22,7 @@ class Equipo(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(120), nullable=False)
+    tipo = db.Column(db.String(10), nullable=False, default=TIPOS_EQUIPO[0], server_default=TIPOS_EQUIPO[0])
     hostname = db.Column(db.String(120), nullable=True)
     ip = db.Column(db.String(45), nullable=True)
     mac = db.Column(db.String(17), nullable=True, unique=True)

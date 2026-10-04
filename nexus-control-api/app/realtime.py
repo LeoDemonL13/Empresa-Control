@@ -38,6 +38,7 @@ def init_socketio(app) -> SocketIO:
     _register_audit_emit_hook()
     _register_handlers()
     _iniciar_tareas_de_fondo(app)
+    _iniciar_sincronizacion_redes_sociales(app)
     return socketio
 
 
@@ -241,6 +242,43 @@ def _iniciar_tareas_de_fondo(app) -> None:
                     _revisar_estado_equipos()
                 except Exception as e:
                     _logger.warning('barredor de estado falló: %s', e)
+                finally:
+                    from app.extensions import db
+                    db.session.remove()
+
+    socketio.start_background_task(_tarea)
+
+
+_sincronizacion_redes_iniciada = False
+
+
+def _intervalo_sincronizacion_segundos() -> int:
+    try:
+        minutos = int(os.environ.get('INTERVALO_SINCRONIZACION_REDES_MINUTOS', '60'))
+    except ValueError:
+        minutos = 60
+    return max(minutos, 5) * 60
+
+
+def _iniciar_sincronizacion_redes_sociales(app) -> None:
+    global _sincronizacion_redes_iniciada
+    if _sincronizacion_redes_iniciada or app.config.get('TESTING'):
+        return
+    if os.environ.get('SINCRONIZAR_REDES_SOCIALES', 'true').strip().lower() == 'false':
+        return
+    _sincronizacion_redes_iniciada = True
+
+    intervalo_segundos = _intervalo_sincronizacion_segundos()
+
+    def _tarea():
+        with app.app_context():
+            while True:
+                socketio.sleep(intervalo_segundos)
+                try:
+                    from app.services.sincronizacion_redes import sincronizar_todas
+                    sincronizar_todas()
+                except Exception as e:
+                    _logger.warning('sincronización de redes sociales falló: %s', e)
                 finally:
                     from app.extensions import db
                     db.session.remove()

@@ -12,3 +12,5 @@ ENROLAMIENTO_TTL_MINUTOS = 30
 
 ESTADOS_APP = ('permitida', 'bloqueada')
 TIPOS_USO_APP = ('sin_limite', 'con_limite')
+
+TIPOS_EQUIPO = ('pc', 'android')

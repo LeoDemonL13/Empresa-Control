@@ -43,3 +43,7 @@ export function quitarAplicacion(equipoId, aplicacionId) {
 export function obtenerUso(equipoId, dias) {
   return api.get(`/equipos/${equipoId}/uso`, { params: dias ? { dias } : {} }).then((r) => r.data)
 }
+
+export function listarAppsInstaladas(equipoId) {
+  return api.get(`/equipos/${equipoId}/apps-instaladas`).then((r) => r.data)
+}

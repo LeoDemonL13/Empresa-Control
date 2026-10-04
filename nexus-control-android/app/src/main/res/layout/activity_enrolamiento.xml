@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/obsidian_main"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="28dp">
+
+        <TextView
+            android:id="@+id/textoTitulo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/enrol_titulo"
+            android:textColor="@color/texto_claro"
+            android:textSize="24sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="28dp"
+            android:text="@string/enrol_subtitulo"
+            android:textColor="@color/obsidian_muted"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:id="@+id/contenedorEnrolamiento"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/obsidian_card"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/enrol_servidor_label"
+                android:textColor="@color/texto_claro"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/campoServidor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:autofillHints="url"
+                android:hint="@string/enrol_servidor_ayuda"
+                android:inputType="textUri"
+                android:textColor="@color/texto_claro"
+                android:textColorHint="@color/obsidian_muted" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/enrol_codigo_label"
+                android:textColor="@color/texto_claro"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/campoCodigo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:autofillHints=""
+                android:hint="@string/enrol_codigo_ayuda"
+                android:inputType="textCapCharacters"
+                android:textColor="@color/texto_claro"
+                android:textColorHint="@color/obsidian_muted" />
+
+            <TextView
+                android:id="@+id/textoError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:textColor="@color/brand_500"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/botonEnrolar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:backgroundTint="@color/brand_500"
+                android:text="@string/enrol_boton"
+                android:textColor="@color/blanco" />
+
+            <ProgressBar
+                android:id="@+id/barraProgreso"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:indeterminate="true"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/contenedorEstado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/obsidian_card"
+            android:orientation="vertical"
+            android:padding="20dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/estado_titulo"
+                android:textColor="@color/texto_claro"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textoNombreEquipo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:textColor="@color/obsidian_muted"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/textoServidor"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/obsidian_muted"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/textoAccesibilidad"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:textColor="@color/brand_500"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/botonActivarAccesibilidad"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:backgroundTint="@color/brand_500"
+                android:text="@string/estado_boton_activar"
+                android:textColor="@color/blanco" />
+
+            <TextView
+                android:id="@+id/textoBateria"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:textColor="@color/obsidian_muted"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/botonBateria"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:backgroundTint="@color/obsidian_card_alt"
+                android:text="@string/estado_boton_bateria"
+                android:textColor="@color/texto_claro" />
+
+            <Button
+                android:id="@+id/botonSincronizar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:backgroundTint="@color/obsidian_card_alt"
+                android:text="@string/estado_boton_sincronizar"
+                android:textColor="@color/texto_claro" />
+
+            <TextView
+                android:id="@+id/textoEstadoSincronizacion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/obsidian_muted"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/botonDesenrolar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:background="@null"
+                android:text="@string/estado_boton_desenrolar"
+                android:textColor="@color/obsidian_muted" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

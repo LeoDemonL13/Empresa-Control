@@ -13,6 +13,7 @@ def _metrica_to_dict(m: MetricaSocial) -> dict:
         'interacciones': m.interacciones,
         'impresiones': m.impresiones,
         'engagement': m.engagement,
+        'origen': m.origen,
         'actualizado_por': m.actualizado_por,
         'updated_at': m.updated_at.isoformat() if m.updated_at else None,
     }

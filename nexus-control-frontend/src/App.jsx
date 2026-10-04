@@ -7,6 +7,7 @@ import Verify2FA from './pages/Verify2FA'
 import Inicio from './pages/Inicio'
 import Perfil from './pages/Perfil'
 import Equipos from './pages/Equipos'
+import RedesSociales from './pages/RedesSociales'
 import Reportes from './pages/Reportes'
 import Usuarios from './pages/Usuarios'
 import Bitacora from './pages/Bitacora'
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="/" element={<Inicio />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/equipos" element={<Equipos />} />
+            <Route path="/redes-sociales" element={<RedesSociales />} />
             <Route path="/reportes" element={<Reportes />} />
             <Route path="/bitacora" element={<Bitacora />} />
             <Route element={<RequiereRol roles={['super_admin']} />}>

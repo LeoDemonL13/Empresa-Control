@@ -74,6 +74,7 @@ def guardar():
             return jsonify({'error': 'El engagement debe ser un porcentaje entre 0 y 100'}), 400
         metrica.engagement = valor
 
+    metrica.origen = 'manual'
     metrica.actualizado_por = current_user().username
     db.session.commit()
 

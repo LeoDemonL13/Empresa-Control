@@ -27,6 +27,7 @@ vi.mock('../../api/equipos', () => ({
   actualizarPolitica: vi.fn(),
   quitarAplicacion: vi.fn(),
   obtenerUso: vi.fn(),
+  listarAppsInstaladas: vi.fn(),
 }))
 
 vi.mock('../../api/categorias', () => ({
@@ -227,4 +228,97 @@ it('agrega una nueva aplicación a la matriz de control', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Agregar' }))
 
   await waitFor(() => expect(equiposApi.agregarAplicacion).toHaveBeenCalledWith(1, { ejecutable: 'discord.exe' }))
+})
+
+it('muestra la etiqueta de tipo de cada equipo', async () => {
+  equiposApi.listarEquipos.mockResolvedValue([
+    {
+      id: 2,
+      nombre: 'Telefono-Ventas',
+      tipo: 'android',
+      usuario_asignado: 'Ana',
+      categoria: { id: 1, nombre: 'Ventas' },
+      en_linea: false,
+      enrolado: false,
+      agente_version: null,
+    },
+  ])
+  montar()
+  await waitFor(() => expect(screen.getByText('Telefono-Ventas')).toBeInTheDocument())
+  expect(screen.getByText('Android')).toBeInTheDocument()
+})
+
+it('crea un equipo Android con el selector de tipo', async () => {
+  equiposApi.crearEquipo.mockResolvedValue({
+    id: 3,
+    nombre: 'Telefono-Nuevo',
+    tipo: 'android',
+    codigo_enrolamiento: 'QWERT-YUIOP',
+    codigo_expira_at: new Date().toISOString(),
+  })
+  montar()
+  await waitFor(() => expect(screen.getByText('PC-Recepcion')).toBeInTheDocument())
+
+  await userEvent.click(screen.getByRole('button', { name: 'Agregar equipo' }))
+  await userEvent.type(screen.getByPlaceholderText('PC-Recepcion'), 'Telefono-Nuevo')
+  await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Tipo de equipo' }), 'android')
+  await userEvent.click(screen.getByRole('button', { name: 'Crear equipo' }))
+
+  await waitFor(() =>
+    expect(equiposApi.crearEquipo).toHaveBeenCalledWith(
+      expect.objectContaining({ nombre: 'Telefono-Nuevo', tipo: 'android' }),
+    ),
+  )
+})
+
+it('ofrece el inventario de apps instaladas al agregar una aplicación en un equipo Android', async () => {
+  equiposApi.listarEquipos.mockResolvedValue([
+    {
+      id: 2,
+      nombre: 'Telefono-Ventas',
+      tipo: 'android',
+      usuario_asignado: 'Ana',
+      categoria: { id: 1, nombre: 'Ventas' },
+      en_linea: true,
+      enrolado: true,
+      agente_version: null,
+    },
+  ])
+  equiposApi.obtenerEquipo.mockResolvedValue({
+    id: 2,
+    nombre: 'Telefono-Ventas',
+    tipo: 'android',
+    usuario_asignado: 'Ana',
+    categoria: { id: 1, nombre: 'Ventas' },
+    en_linea: true,
+    enrolado: true,
+    agente_version: null,
+    codigo_pendiente: null,
+  })
+  equiposApi.listarAplicaciones.mockResolvedValue([])
+  equiposApi.listarAppsInstaladas.mockResolvedValue([
+    { paquete: 'com.whatsapp', etiqueta: 'WhatsApp' },
+  ])
+  equiposApi.agregarAplicacion.mockResolvedValue({
+    id: 10,
+    aplicacion: { id: 10, nombre: 'WhatsApp', ejecutable: 'com.whatsapp' },
+    estado: 'permitida',
+    tipo_uso: 'sin_limite',
+    uso_hoy_segundos: 0,
+    uso_7dias_segundos: 0,
+  })
+
+  montar()
+  await waitFor(() => expect(screen.getByText('Telefono-Ventas')).toBeInTheDocument())
+  await userEvent.click(screen.getByRole('button', { name: 'Ver' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Aplicaciones' }))
+  await waitFor(() => expect(equiposApi.listarAppsInstaladas).toHaveBeenCalledWith(2))
+
+  const campo = screen.getByPlaceholderText('com.instagram.android')
+  await userEvent.type(campo, 'com.whatsapp')
+  await userEvent.click(screen.getByRole('button', { name: 'Agregar' }))
+
+  await waitFor(() =>
+    expect(equiposApi.agregarAplicacion).toHaveBeenCalledWith(2, { ejecutable: 'com.whatsapp', nombre: 'WhatsApp' }),
+  )
 })

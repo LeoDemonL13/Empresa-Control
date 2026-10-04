@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   AppWindow, Ban, KeyRound, Monitor, Network, Plus, RefreshCw, ShieldBan, ShieldCheck,
-  Trash2, User, Wifi, WifiOff,
+  Smartphone, Trash2, User, Wifi, WifiOff,
 } from 'lucide-react'
 import { Badge, Button, Card, Modal } from '../components/ui'
 import Input, { Label } from '../components/ui/Input'
@@ -14,6 +14,9 @@ function Alerta({ children }) {
   if (!children) return null
   return <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">{children}</div>
 }
+
+const ICONO_TIPO = { pc: Monitor, android: Smartphone }
+const ETIQUETA_TIPO = { pc: 'PC', android: 'Android' }
 
 function formatearDuracion(segundos) {
   const s = segundos || 0
@@ -125,9 +128,10 @@ function FilaAplicacion({ equipoId, politica, maxUso7dias, onCambiado }) {
   )
 }
 
-function PanelAplicaciones({ equipoId }) {
+function PanelAplicaciones({ equipoId, tipo }) {
   const [politicas, setPoliticas] = useState(null)
   const [ejecutable, setEjecutable] = useState('')
+  const [appsInstaladas, setAppsInstaladas] = useState([])
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
 
@@ -137,12 +141,20 @@ function PanelAplicaciones({ equipoId }) {
 
   useEffect(cargar, [equipoId])
 
+  useEffect(() => {
+    if (tipo !== 'android') return
+    equiposApi.listarAppsInstaladas(equipoId).then(setAppsInstaladas).catch(() => {})
+  }, [equipoId, tipo])
+
   async function agregar(e) {
     e.preventDefault()
     setError('')
     setCargando(true)
     try {
-      await equiposApi.agregarAplicacion(equipoId, { ejecutable })
+      const paquete = ejecutable.trim()
+      const coincidencia = appsInstaladas.find((a) => a.paquete === paquete)
+      const payload = coincidencia ? { ejecutable: paquete, nombre: coincidencia.etiqueta } : { ejecutable: paquete }
+      await equiposApi.agregarAplicacion(equipoId, payload)
       setEjecutable('')
       cargar()
     } catch (err) {
@@ -157,17 +169,39 @@ function PanelAplicaciones({ equipoId }) {
     [politicas],
   )
 
+  const listaId = `lista-apps-instaladas-${equipoId}`
+
   return (
     <div className="space-y-4">
       <form onSubmit={agregar} className="flex items-end gap-2">
         <div className="flex-1">
-          <Label>Agregar aplicación por ejecutable</Label>
-          <Input value={ejecutable} onChange={(e) => setEjecutable(e.target.value)} placeholder="discord.exe" required />
+          <Label>{tipo === 'android' ? 'Agregar aplicación por paquete' : 'Agregar aplicación por ejecutable'}</Label>
+          <Input
+            value={ejecutable}
+            onChange={(e) => setEjecutable(e.target.value)}
+            placeholder={tipo === 'android' ? 'com.instagram.android' : 'discord.exe'}
+            list={tipo === 'android' ? listaId : undefined}
+            required
+          />
+          {tipo === 'android' && (
+            <datalist id={listaId}>
+              {appsInstaladas.map((a) => (
+                <option key={a.paquete} value={a.paquete}>
+                  {a.etiqueta}
+                </option>
+              ))}
+            </datalist>
+          )}
         </div>
         <Button type="submit" leftIcon={<Plus size={14} />} loading={cargando}>
           Agregar
         </Button>
       </form>
+      {tipo === 'android' && appsInstaladas.length === 0 && (
+        <p className="text-xs text-ink-400 dark:text-obsidian-muted">
+          Todavía no hay apps sincronizadas desde el teléfono; puedes escribir el paquete a mano mientras tanto.
+        </p>
+      )}
       <Alerta>{error}</Alerta>
 
       {politicas === null && <p className="text-sm text-ink-500 dark:text-obsidian-muted">Cargando...</p>}
@@ -208,12 +242,13 @@ function CampoCategoria({ value, onChange, categorias }) {
 }
 
 function EquipoCard({ equipo, onVer }) {
+  const IconoTipo = ICONO_TIPO[equipo.tipo] || Monitor
   return (
     <Card padded={false} className="flex flex-col">
       <div className="flex items-start justify-between gap-3 p-5 pb-4">
         <div className="flex min-w-0 items-center gap-3">
           <div className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-ink-100 text-ink-700 dark:bg-obsidian-cardAlt dark:text-ink-200">
-            <Monitor size={22} strokeWidth={1.8} />
+            <IconoTipo size={22} strokeWidth={1.8} />
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-ink-900 dark:text-white">{equipo.nombre}</p>
@@ -242,7 +277,10 @@ function EquipoCard({ equipo, onVer }) {
         </p>
       </div>
       <div className="flex items-center justify-between gap-2 border-t border-ink-200 px-5 py-3 dark:border-obsidian-line">
-        <Badge tone={equipo.categoria ? 'neutral' : 'neutral'}>{equipo.categoria?.nombre || 'Sin categoría'}</Badge>
+        <div className="flex items-center gap-1.5">
+          <Badge tone="neutral" mono>{ETIQUETA_TIPO[equipo.tipo] || 'PC'}</Badge>
+          <Badge tone="neutral">{equipo.categoria?.nombre || 'Sin categoría'}</Badge>
+        </div>
         <Button size="sm" variant="secondary" onClick={() => onVer(equipo.id)}>
           Ver
         </Button>
@@ -251,14 +289,16 @@ function EquipoCard({ equipo, onVer }) {
   )
 }
 
+const FORM_VACIO_CREAR = { nombre: '', tipo: 'pc', usuario_asignado: '', categoria: '' }
+
 function ModalCrear({ open, onClose, onCreado, categorias }) {
-  const [form, setForm] = useState({ nombre: '', usuario_asignado: '', categoria: '', hostname: '', ip: '', sistema_operativo: '' })
+  const [form, setForm] = useState(FORM_VACIO_CREAR)
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
   const [creado, setCreado] = useState(null)
 
   function cerrar() {
-    setForm({ nombre: '', usuario_asignado: '', categoria: '', hostname: '', ip: '', sistema_operativo: '' })
+    setForm(FORM_VACIO_CREAR)
     setCreado(null)
     setError('')
     onClose()
@@ -285,27 +325,28 @@ function ModalCrear({ open, onClose, onCreado, categorias }) {
         <form onSubmit={crear} className="space-y-4">
           <div>
             <Label>Nombre del equipo</Label>
-            <Input value={form.nombre} onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))} placeholder="PC-Recepcion" required />
+            <Input
+              value={form.nombre}
+              onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
+              placeholder={form.tipo === 'android' ? 'Telefono-Ventas' : 'PC-Recepcion'}
+              required
+            />
+          </div>
+          <div>
+            <Label>Tipo de equipo</Label>
+            <Select aria-label="Tipo de equipo" value={form.tipo} onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value }))}>
+              <option value="pc">PC (Windows)</option>
+              <option value="android">Celular o tablet Android</option>
+            </Select>
           </div>
           <div>
             <Label>Usuario asignado</Label>
             <Input value={form.usuario_asignado} onChange={(e) => setForm((f) => ({ ...f, usuario_asignado: e.target.value }))} />
           </div>
           <CampoCategoria value={form.categoria} onChange={(v) => setForm((f) => ({ ...f, categoria: v }))} categorias={categorias} />
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Hostname</Label>
-              <Input value={form.hostname} onChange={(e) => setForm((f) => ({ ...f, hostname: e.target.value }))} />
-            </div>
-            <div>
-              <Label>IP</Label>
-              <Input value={form.ip} onChange={(e) => setForm((f) => ({ ...f, ip: e.target.value }))} />
-            </div>
-          </div>
-          <div>
-            <Label>Sistema operativo</Label>
-            <Input value={form.sistema_operativo} onChange={(e) => setForm((f) => ({ ...f, sistema_operativo: e.target.value }))} placeholder="Windows 11 Pro" />
-          </div>
+          <p className="text-xs text-ink-500 dark:text-obsidian-muted">
+            Hostname, IP y sistema operativo no se piden aquí: se completan solos en cuanto el agente se enrola con el código.
+          </p>
           <Alerta>{error}</Alerta>
           <Button type="submit" className="w-full" loading={cargando}>
             Crear equipo
@@ -354,11 +395,9 @@ function ModalVer({ equipoId, onClose, onCambiado, categorias }) {
       setEquipo(data)
       setForm({
         nombre: data.nombre,
+        tipo: data.tipo || 'pc',
         usuario_asignado: data.usuario_asignado || '',
         categoria: data.categoria?.nombre || '',
-        hostname: data.hostname || '',
-        ip: data.ip || '',
-        sistema_operativo: data.sistema_operativo || '',
       })
     })
   }, [equipoId])
@@ -419,7 +458,7 @@ function ModalVer({ equipoId, onClose, onCambiado, categorias }) {
             </button>
           </div>
 
-          {pestana === 'aplicaciones' && <PanelAplicaciones equipoId={equipo.id} />}
+          {pestana === 'aplicaciones' && <PanelAplicaciones equipoId={equipo.id} tipo={equipo.tipo} />}
 
           {pestana === 'info' && (
             <>
@@ -429,6 +468,7 @@ function ModalVer({ equipoId, onClose, onCambiado, categorias }) {
             ) : (
               <Badge tone="neutral" mono leftIcon={<WifiOff size={12} />}>Fuera de línea</Badge>
             )}
+            <Badge tone="neutral" mono>{ETIQUETA_TIPO[equipo.tipo] || 'PC'}</Badge>
             <Badge tone="neutral">{equipo.categoria?.nombre || 'Sin categoría'}</Badge>
           </div>
 
@@ -510,24 +550,20 @@ function ModalVer({ equipoId, onClose, onCambiado, categorias }) {
             <Input value={form.nombre} onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))} required />
           </div>
           <div>
+            <Label>Tipo de equipo</Label>
+            <Select aria-label="Tipo de equipo" value={form.tipo} onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value }))}>
+              <option value="pc">PC (Windows)</option>
+              <option value="android">Celular o tablet Android</option>
+            </Select>
+          </div>
+          <div>
             <Label>Usuario asignado</Label>
             <Input value={form.usuario_asignado} onChange={(e) => setForm((f) => ({ ...f, usuario_asignado: e.target.value }))} />
           </div>
           <CampoCategoria value={form.categoria} onChange={(v) => setForm((f) => ({ ...f, categoria: v }))} categorias={categorias} />
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Hostname</Label>
-              <Input value={form.hostname} onChange={(e) => setForm((f) => ({ ...f, hostname: e.target.value }))} />
-            </div>
-            <div>
-              <Label>IP</Label>
-              <Input value={form.ip} onChange={(e) => setForm((f) => ({ ...f, ip: e.target.value }))} />
-            </div>
-          </div>
-          <div>
-            <Label>Sistema operativo</Label>
-            <Input value={form.sistema_operativo} onChange={(e) => setForm((f) => ({ ...f, sistema_operativo: e.target.value }))} />
-          </div>
+          <p className="text-xs text-ink-500 dark:text-obsidian-muted">
+            Hostname, IP y sistema operativo los reporta el agente solo; se ven en la pestaña "Información".
+          </p>
           <Alerta>{error}</Alerta>
           <div className="flex gap-2">
             <Button type="button" variant="secondary" className="w-full" onClick={() => setEditando(false)}>

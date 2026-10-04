@@ -34,6 +34,15 @@ def test_general_csv_incluye_los_equipos(client, admin):
     assert 'PC-Reporte-General' in r.data.decode('utf-8-sig')
 
 
+def test_general_csv_incluye_el_tipo_de_equipo(client, admin):
+    h = _h(client, admin)
+    client.post('/api/equipos', json={'nombre': 'Telefono-Reporte', 'tipo': 'android'}, headers=h)
+    r = client.get('/api/reportes/general?formato=csv', headers=h)
+    contenido = r.data.decode('utf-8-sig')
+    assert 'Tipo' in contenido
+    assert 'Android' in contenido
+
+
 def test_general_xlsx_se_genera(client, admin):
     r = client.get('/api/reportes/general?formato=xlsx', headers=_h(client, admin))
     assert r.status_code == 200

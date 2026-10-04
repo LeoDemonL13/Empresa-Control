@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from flask import current_app, jsonify, request
 
-from app.constants import ROLE_ADMIN, ROLE_SUPER_ADMIN
+from app.constants import ROLE_ADMIN, ROLE_SUPER_ADMIN, TIPOS_EQUIPO
 from app.extensions import db, limiter
 from app.models import CodigoEnrolamiento, Equipo
 from app.realtime import emit_to_role
@@ -92,6 +92,10 @@ def crear():
     if len(nombre) > 120:
         return jsonify({'error': 'El nombre es demasiado largo'}), 400
 
+    tipo = (data.get('tipo') or TIPOS_EQUIPO[0]).strip()
+    if tipo not in TIPOS_EQUIPO:
+        return jsonify({'error': 'Tipo de equipo inválido'}), 400
+
     categoria_nombre = (data.get('categoria') or '').strip()
     categoria = None
     categoria_creada = False
@@ -100,6 +104,7 @@ def crear():
 
     equipo = Equipo(
         nombre=nombre,
+        tipo=tipo,
         usuario_asignado=(data.get('usuario_asignado') or '').strip() or None,
         hostname=(data.get('hostname') or '').strip() or None,
         ip=(data.get('ip') or '').strip() or None,
@@ -142,6 +147,12 @@ def actualizar(equipo_id):
     data = request.get_json(silent=True) or {}
     if 'nombre' in data and not (data.get('nombre') or '').strip():
         return jsonify({'error': 'El nombre del equipo es obligatorio'}), 400
+
+    if 'tipo' in data:
+        tipo = (data.get('tipo') or '').strip()
+        if tipo not in TIPOS_EQUIPO:
+            return jsonify({'error': 'Tipo de equipo inválido'}), 400
+        equipo.tipo = tipo
 
     for campo in _CAMPOS_TEXTO:
         if campo in data:

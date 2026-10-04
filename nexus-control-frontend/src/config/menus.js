@@ -1,4 +1,4 @@
-import { Home, User, MonitorSmartphone, FileBarChart, UserCog, History } from 'lucide-react'
+import { Home, User, MonitorSmartphone, Share2, FileBarChart, UserCog, History } from 'lucide-react'
 
 export const MENU_ADMIN = [
   {
@@ -12,6 +12,7 @@ export const MENU_ADMIN = [
     label: 'Operación',
     items: [
       { path: '/equipos', label: 'Equipos', icon: MonitorSmartphone },
+      { path: '/redes-sociales', label: 'Redes sociales', icon: Share2 },
       { path: '/reportes', label: 'Reportes', icon: FileBarChart },
     ],
   },

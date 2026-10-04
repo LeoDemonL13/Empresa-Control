@@ -21,6 +21,7 @@ def _equipo_to_dict(equipo: Equipo) -> dict:
     return {
         'id': equipo.id,
         'nombre': equipo.nombre,
+        'tipo': equipo.tipo,
         'hostname': equipo.hostname,
         'ip': equipo.ip,
         'mac': equipo.mac,

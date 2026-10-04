@@ -1,4 +1,5 @@
 import ipaddress
+import json
 import os
 
 import redis
@@ -9,8 +10,18 @@ from flask_limiter.util import get_remote_address
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
-from sqlalchemy import String
+from sqlalchemy import String, Text
 from sqlalchemy.types import TypeDecorator
+
+
+def _fernet_desde_env():
+    key = os.environ.get('TOTP_ENCRYPTION_KEY', '').strip()
+    if not key:
+        raise RuntimeError(
+            "CRÍTICO: TOTP_ENCRYPTION_KEY no configurada. "
+            "Genera una clave con: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+        )
+    return Fernet(key.encode() if isinstance(key, str) else key)
 
 
 class EncryptedString(TypeDecorator):
@@ -18,13 +29,7 @@ class EncryptedString(TypeDecorator):
     cache_ok = True
 
     def _fernet(self):
-        key = os.environ.get('TOTP_ENCRYPTION_KEY', '').strip()
-        if not key:
-            raise RuntimeError(
-                "CRÍTICO: TOTP_ENCRYPTION_KEY no configurada. "
-                "Genera una clave con: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
-            )
-        return Fernet(key.encode() if isinstance(key, str) else key)
+        return _fernet_desde_env()
 
     def process_bind_param(self, value, dialect):
         if value is None:
@@ -38,6 +43,29 @@ class EncryptedString(TypeDecorator):
             return self._fernet().decrypt(value.encode()).decode()
         except Exception:
             return value
+
+
+class EncryptedJSON(TypeDecorator):
+    impl = Text
+    cache_ok = True
+
+    def _fernet(self):
+        return _fernet_desde_env()
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        crudo = json.dumps(value, ensure_ascii=False, separators=(',', ':'))
+        return self._fernet().encrypt(crudo.encode()).decode()
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        try:
+            crudo = self._fernet().decrypt(value.encode()).decode()
+            return json.loads(crudo)
+        except Exception:
+            return None
 
 
 db = SQLAlchemy()

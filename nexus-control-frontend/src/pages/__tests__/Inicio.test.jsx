@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
 import Inicio from '../Inicio'
 import { AuthProvider } from '../../context/AuthContext'
@@ -36,11 +37,13 @@ import * as metricasApi from '../../api/metricas'
 
 function montar() {
   return render(
-    <AuthProvider>
-      <SocketProvider>
-        <Inicio />
-      </SocketProvider>
-    </AuthProvider>,
+    <MemoryRouter>
+      <AuthProvider>
+        <SocketProvider>
+          <Inicio />
+        </SocketProvider>
+      </AuthProvider>
+    </MemoryRouter>,
   )
 }
 
@@ -101,10 +104,21 @@ it('agrega una nueva métrica de red social', async () => {
 
 it('lista las métricas existentes', async () => {
   metricasApi.listarMetricas.mockResolvedValue([
-    { id: 1, red_social: 'instagram', me_gusta: 120, interacciones: 45, impresiones: 900, engagement: 5.5 },
+    { id: 1, red_social: 'instagram', me_gusta: 120, interacciones: 45, impresiones: 900, engagement: 5.5, origen: 'manual' },
   ])
   montar()
   await waitFor(() => expect(screen.getByText('instagram')).toBeInTheDocument())
   expect(screen.getByText('120')).toBeInTheDocument()
   expect(screen.getByText('5.5%')).toBeInTheDocument()
+  expect(screen.getByText('Manual')).toBeInTheDocument()
+})
+
+it('distingue las métricas sincronizadas automáticamente', async () => {
+  metricasApi.listarMetricas.mockResolvedValue([
+    { id: 2, red_social: 'Facebook', me_gusta: 500, interacciones: 80, impresiones: 4000, engagement: 2, origen: 'automatico' },
+  ])
+  montar()
+  await waitFor(() => expect(screen.getByText('Facebook')).toBeInTheDocument())
+  expect(screen.getByText('Automático')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Conectar plataformas' })).toHaveAttribute('href', '/redes-sociales')
 })

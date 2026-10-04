@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nexus Obsidian Control</string>
+
+    <string name="accessibility_service_label">Nexus Obsidian Control – Supervisión</string>
+    <string name="accessibility_service_description">Permite que Nexus Obsidian Control detecte qué aplicación está en primer plano para aplicar los límites y bloqueos configurados por el administrador de la empresa.</string>
+
+    <string name="enrol_titulo">Nexus Obsidian Control</string>
+    <string name="enrol_subtitulo">Control de dispositivos Android</string>
+    <string name="enrol_servidor_label">Dirección del servidor</string>
+    <string name="enrol_servidor_ayuda">Ejemplo: http://192.168.1.50:5001</string>
+    <string name="enrol_codigo_label">Código de enrolamiento</string>
+    <string name="enrol_codigo_ayuda">El código de 11 caracteres que te dio el administrador</string>
+    <string name="enrol_boton">Enrolar este dispositivo</string>
+    <string name="enrol_error_servidor">Escribe la dirección del servidor</string>
+    <string name="enrol_error_codigo">Escribe el código de enrolamiento</string>
+    <string name="enrol_enrolando">Enrolando…</string>
+    <string name="enrol_exito">Dispositivo enrolado como \"%1$s\"</string>
+
+    <string name="estado_titulo">Este dispositivo está enrolado</string>
+    <string name="estado_nombre_equipo">Equipo: %1$s</string>
+    <string name="estado_servidor">Servidor: %1$s</string>
+    <string name="estado_accesibilidad_pendiente">Falta activar el servicio de accesibilidad para que los bloqueos funcionen</string>
+    <string name="estado_accesibilidad_activa">Supervisión activa</string>
+    <string name="estado_boton_activar">Activar supervisión</string>
+    <string name="estado_bateria_pendiente">Optimización de batería: puede retrasar la supervisión en segundo plano</string>
+    <string name="estado_bateria_activa">Optimización de batería desactivada para esta app</string>
+    <string name="estado_boton_bateria">Permitir funcionamiento en segundo plano</string>
+    <string name="estado_boton_sincronizar">Sincronizar ahora</string>
+    <string name="estado_boton_desenrolar">Desenrolar este dispositivo</string>
+    <string name="estado_confirmar_desenrolar">Este dispositivo dejará de reportarse al panel y de aplicar los bloqueos. ¿Deseas continuar?</string>
+    <string name="estado_sincronizando">Sincronizando…</string>
+    <string name="estado_sincronizado">Sincronizado correctamente</string>
+    <string name="estado_error_sincronizar">No se pudo sincronizar, revisa tu conexión</string>
+
+    <string name="bloqueo_titulo_bloqueada">Aplicación bloqueada</string>
+    <string name="bloqueo_titulo_limite">Límite de uso alcanzado</string>
+    <string name="bloqueo_mensaje_bloqueada">%1$s está bloqueada por las políticas de Nexus Obsidian Control. Si necesitas usarla, solicítalo al administrador de tu empresa.</string>
+    <string name="bloqueo_mensaje_limite">Ya usaste %1$s durante %2$d minutos hoy, el límite diario permitido. Podrás volver a usarla mañana.</string>
+    <string name="bloqueo_regresando">Regresando al inicio en %1$d…</string>
+    <string name="bloqueo_boton">Entendido, volver al inicio</string>
+</resources>

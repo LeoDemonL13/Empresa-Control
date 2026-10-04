@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Ban, Monitor, Plus, Share2, Trash2, TrendingUp, Wifi, WifiOff } from 'lucide-react'
 import { Badge, Button, Card, CardHeader, Modal, StatCard } from '../components/ui'
 import Input, { Label } from '../components/ui/Input'
@@ -32,9 +33,14 @@ function TarjetaMetrica({ metrica, onEditar, onEliminar }) {
   return (
     <div className="rounded-lg border border-ink-200 p-4 dark:border-obsidian-line">
       <div className="flex items-start justify-between gap-2">
-        <p className="font-mono text-xs font-semibold uppercase tracking-wide text-ink-700 dark:text-ink-200">
-          {metrica.red_social}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="font-mono text-xs font-semibold uppercase tracking-wide text-ink-700 dark:text-ink-200">
+            {metrica.red_social}
+          </p>
+          <Badge tone={metrica.origen === 'automatico' ? 'brand' : 'neutral'} className="whitespace-nowrap">
+            {metrica.origen === 'automatico' ? 'Automático' : 'Manual'}
+          </Badge>
+        </div>
         <div className="flex gap-1">
           <button
             type="button"
@@ -257,11 +263,16 @@ export default function Inicio() {
       <Card>
         <CardHeader
           title="Resumen de redes sociales"
-          description="Métricas consolidadas por plataforma, actualizadas manualmente por el equipo."
+          description="Métricas por plataforma: automáticas si está conectada, o capturadas a mano."
           actions={
-            <Button size="sm" leftIcon={<Plus size={14} />} onClick={() => { setModalMetrica(null); setMostrarModal(true) }}>
-              Agregar
-            </Button>
+            <div className="flex items-center gap-2">
+              <Link to="/redes-sociales" className="text-xs font-medium text-brand-600 hover:underline dark:text-brand-300">
+                Conectar plataformas
+              </Link>
+              <Button size="sm" leftIcon={<Plus size={14} />} onClick={() => { setModalMetrica(null); setMostrarModal(true) }}>
+                Agregar
+              </Button>
+            </div>
           }
         />
         {metricas.length === 0 && (
