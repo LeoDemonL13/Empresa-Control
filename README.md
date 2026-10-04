@@ -1,6 +1,6 @@
 # Nexus Obsidian Control
 
-Panel de escritorio y servidor para administrar hasta 100 equipos, ahora también celulares y tablets Android. Este paquete llega completo hasta la **Fase 8**: acceso, Administradores, Bitácora, Equipos (PC y Android en una sola lista, con hostname/IP/sistema operativo que el agente completa solo), agente de Windows con señal de vida, agente de Android con bloqueo por pantalla, la matriz de control de aplicaciones (permitir o bloquear, límites de tiempo diario, uso real) compartida entre ambos tipos de equipo, el Inicio con indicadores en vivo, el resumen de redes sociales (manual o sincronizado solo), la nueva sección de **Redes sociales** para conectar Facebook, Instagram, TikTok, YouTube y X, y el módulo de Reportes (general, actividades y uso, auditoría) en PDF, CSV y Excel.
+Panel de escritorio y servidor para administrar hasta 100 equipos, ahora también celulares y tablets Android. Este paquete llega completo hasta la **Fase 8**: acceso, Administradores, Bitácora, Equipos (PC y Android en una sola lista, con hostname/IP/sistema operativo que el agente completa solo), agente de Windows con señal de vida, agente de Android con bloqueo por pantalla, la matriz de control de aplicaciones (permitir o bloquear, límites de tiempo diario, uso real) compartida entre ambos tipos de equipo, el Inicio con indicadores en vivo, el resumen de redes sociales (manual o sincronizado solo), la sección de **Redes sociales** para conectar Facebook, Instagram, TikTok y YouTube con el inicio de sesión real de cada plataforma (OAuth 2.0, sin pegar tokens a mano), y el módulo de Reportes (general, actividades y uso, auditoría) en PDF, CSV y Excel.
 
 ## Inicio rápido en Windows
 
@@ -47,75 +47,61 @@ La pantalla de Inicio muestra:
 - **Actividad reciente:** las últimas acciones del administrador que inició sesión.
 - **Resumen de redes sociales:** tarjetas con métricas por plataforma (me gusta, interacciones, impresiones y engagement). Esta tabla empieza vacía a propósito: no hay datos de ejemplo. Cada tarjeta dice si el número es "Manual" (lo cargó una persona con "Agregar"/"Editar") o "Automático" (lo trajo la sincronización real descrita abajo, en **Redes sociales**). Un valor manual se puede seguir editando o quitando con el bote de basura en cualquier momento.
 
-## Redes sociales (sincronización automática)
+## Redes sociales (conexión real con OAuth)
 
-En el menú lateral, **Redes sociales** permite conectar de verdad Facebook, Instagram, TikTok, YouTube y X: se pegan las credenciales de cada plataforma **una sola vez**, quedan cifradas en el servidor, y a partir de ahí el sistema sincroniza solo las métricas cada cierto tiempo, sin volver a pedirlas. El resultado aparece en el Inicio, en la tarjeta de esa red social, marcado como "Automático".
+En el menú lateral, **Redes sociales** conecta de verdad Facebook, Instagram, TikTok y YouTube: ya no se pega ningún token ni contraseña a mano. Cada tarjeta tiene un botón "Conectar con..." que abre el inicio de sesión real de esa plataforma (OAuth 2.0): la persona entra con su propia cuenta, autoriza el acceso, y la plataforma devuelve a Nexus Obsidian Control con un código de un solo uso que el servidor cambia por un token — ese token nunca pasa por el navegador ni se muestra en ninguna pantalla. Las credenciales quedan cifradas en el servidor (AES-256-GCM) y, desde ese momento, el sistema sincroniza solo las métricas cada cierto tiempo, renovando el acceso antes de que expire.
+
+**Muy importante: una tarjeta solo se marca como conectada cuando la conexión es real.** Eso quiere decir que la persona completó el inicio de sesión de la plataforma, el servidor guardó el token cifrado, hizo una llamada de prueba real contra la API de esa red, y la plataforma identificó la cuenta externa (página, canal o usuario). Si cualquiera de esos pasos falla, la tarjeta se queda en gris o en rojo; nunca se simula una conexión.
 
 **Quién puede hacer qué:**
 
-- Cualquier administrador puede ver el estado de las conexiones, sincronizar una plataforma o todas con el botón correspondiente.
-- Solo el **súper administrador** puede guardar o quitar credenciales (son datos sensibles). Si un administrador normal entra a esta pantalla, no ve los botones de "Configurar" ni "Desconectar", solo "Sincronizar ahora".
+- Cualquier administrador puede ver el estado de las conexiones, abrir el panel "Administrar" (en modo de solo lectura), sincronizar una plataforma o todas, y ver los resúmenes de actividad.
+- Solo el **súper administrador** puede conectar, reconectar o desconectar una plataforma. Un administrador normal no ve esos botones, solo "Sincronizar ahora".
 
-**Cómo se sincroniza:**
+**Cómo conectar una plataforma:** antes de poder pulsar "Conectar con...", hay que dar de alta, una sola vez, una "aplicación" en el panel de desarrolladores de esa red social y copiar sus identificadores al `.env` del servidor — es un trámite de la propia red social, no algo que Nexus Obsidian Control pueda generar por ti. El archivo **[`CONFIGURAR_REDES_SOCIALES.md`](CONFIGURAR_REDES_SOCIALES.md)**, en la raíz de este proyecto, explica ese trámite paso a paso para las cuatro plataformas, sin dar por hecho que sabes de desarrollo. Mientras una plataforma no tenga esas variables configuradas, su tarjeta muestra un aviso en vez del botón de conectar, y el resto del sistema sigue funcionando con normalidad.
 
-- Automático: el servidor revisa todas las plataformas conectadas cada `INTERVALO_SINCRONIZACION_REDES_MINUTOS` minutos (60 por defecto). Se cambia en el `.env` del servidor.
-- Manual: el botón "Sincronizar ahora" de cada tarjeta, o "Sincronizar todas" arriba de la lista, lo hace al instante — es la forma de comprobar que unas credenciales recién guardadas funcionan, sin esperar a la siguiente vuelta automática.
-- Para apagar la sincronización automática por completo (dejando solo el botón manual), pon `SINCRONIZAR_REDES_SOCIALES=false` en el `.env` del servidor.
+**Los 5 estados de una conexión:**
 
-**Si algo falla:** la tarjeta de esa plataforma muestra el mensaje de error exacto que devolvió la red social (token vencido, permiso revocado, ID equivocado, etc.) en "Último error". Vuelve a guardar las credenciales correctas y sincroniza de nuevo.
+| Icono | Estado | Qué significa |
+|---|---|---|
+| 🟢 | Conectado | Todo funciona con normalidad. |
+| 🔵 | Renovando sesión | El sistema está cambiando el token vencido por uno nuevo; es automático y ocurre en segundo plano. |
+| 🟠 | La sesión está por expirar | El token todavía sirve, pero queda poco tiempo; el sistema lo va a renovar solo antes de que se acabe. |
+| 🔴 | Requiere reconexión / Error | O la plataforma revocó el permiso (hay que pulsar "Reconectar"), o falló una sincronización y el sistema reintentará solo, con espera creciente (1, 2, 5, 15 y 30 minutos), sin desconectar la cuenta por un solo fallo. |
+| ⚫ | No conectado | Nunca se conectó, o se desconectó a propósito. |
 
-### Cómo obtener las credenciales de cada plataforma
+**Cómo se sincroniza:** el servidor revisa, cada minuto, qué conexiones ya les toca sincronizar según `SOCIAL_SYNC_INTERVAL_MINUTES` (15 minutos por defecto; se cambia en el `.env` del servidor), y sincroniza solo esas — no todas a la vez. El botón "Sincronizar ahora" de cada tarjeta, o "Sincronizar todas" arriba de la lista, lo hace al instante, útil para comprobar que una conexión recién hecha funciona sin esperar a la siguiente vuelta automática. Por seguridad hay un enfriamiento de un minuto entre dos sincronizaciones de la misma plataforma.
 
-Estas credenciales las genera cada red social desde su propio sitio de desarrolladores; Nexus Obsidian Control no puede crearlas por ti porque están ligadas a la identidad y a las páginas/cuentas de tu negocio.
+**El panel "Administrar"** de cada tarjeta muestra, sin mostrar nunca el token: la cuenta externa conectada (y quién la conectó, y cuándo), la lista de páginas/canales/cuentas encontradas con un interruptor para seguir o dejar de seguir cada una, la próxima sincronización programada, el último error en palabras simples (el detalle técnico completo solo queda en la Bitácora) y, para el súper administrador, los botones de reconexión o desconexión.
 
-**Facebook** (campos: *Token de acceso de la página* e *ID de la página*)
+**El panel de estado del sistema**, arriba de la lista de tarjetas, muestra el intervalo de sincronización configurado y, por plataforma, el resultado y el tiempo de respuesta de la última sincronización — así se ve de un vistazo si todo el sistema de sincronización está funcionando, no solo una tarjeta.
 
-1. Entra a [developers.facebook.com](https://developers.facebook.com), crea una app de tipo "Negocios".
-2. En **Graph API Explorer**, selecciona tu app, pide un token de usuario con los permisos `pages_read_engagement` y `pages_show_list`, y cámbialo por un **token de página** de larga duración (el propio Graph API Explorer tiene un botón para esto, o se hace con el endpoint `/oauth/access_token` usando tu App ID y App Secret).
-3. El **ID de la página** aparece en "Acerca de" de tu página de Facebook, o con `GET /me/accounts` usando tu token de usuario.
+**Resúmenes de actividad:** el panel calcula automáticamente totales de las últimas 24 horas, 7 días y 30 días (o un rango de fechas a elegir) con publicaciones, interacciones, impresiones/vistas, crecimiento de seguidores, la mejor y la peor publicación, y una frase generada a partir de esos mismos datos guardados (nunca un texto inventado ni al azar). Un campo que la API de esa plataforma no expone se muestra siempre como **"No disponible"**, nunca como 0, para no confundir "no hay datos" con "no pasó nada".
 
-**Instagram** (campos: *Token de acceso* e *ID de la cuenta de Instagram Business*)
+**Desconectar una plataforma** pide confirmación, intenta revocar el acceso en la plataforma cuando esa red lo permite, y borra las credenciales guardadas — pero **conserva todo el historial de métricas** (publicaciones, estadísticas, resúmenes) salvo que se marque explícitamente la opción de borrar también el histórico al desconectar.
 
-1. Tu cuenta de Instagram debe ser "Business" o "Creator" y estar vinculada a una página de Facebook (Instagram → Configuración → Cuentas vinculadas).
-2. Usa el **mismo token de página** que obtuviste para Facebook arriba (necesita además el permiso `instagram_basic` e `instagram_manage_insights`).
-3. El **ID de la cuenta de negocio** se obtiene con `GET /{id-de-tu-pagina}?fields=instagram_business_account` usando ese mismo token.
-
-**TikTok** (campos: *Client Key*, *Client Secret*, *Refresh Token*)
-
-1. Crea una cuenta en [developers.tiktok.com](https://developers.tiktok.com) y una app con el producto **Login Kit**, con los scopes `user.info.basic` y `user.info.stats`.
-2. El **Client Key** y **Client Secret** se ven en el panel de la app.
-3. El **Refresh Token** solo se consigue completando una vez el inicio de sesión de TikTok con esa app (es un paso interactivo de OAuth que TikTok exige; no hay forma de evitarlo la primera vez). El refresh token dura aproximadamente un año y Nexus Obsidian Control lo usa para renovar el token de acceso solo en cada sincronización, así que después de este paso único ya no se vuelve a pedir nada.
-
-**YouTube** (campos: *Clave de API* e *ID del canal*)
-
-1. Entra a [console.cloud.google.com](https://console.cloud.google.com), crea un proyecto, y en "APIs y servicios" activa **YouTube Data API v3**.
-2. En "Credenciales", crea una **clave de API** (no hace falta OAuth para esto).
-3. El **ID del canal** (empieza con `UC...`) se ve en YouTube Studio → Configuración → Canal → Información básica del canal.
-
-**X (antes Twitter)** (campos: *Bearer Token* y *usuario de la cuenta*)
-
-1. Entra a [developer.x.com](https://developer.x.com) y suscríbete a un plan con acceso a la API v2 (al menos el nivel "Basic", de pago; el nivel gratuito no permite leer tweets de una cuenta).
-2. Crea una app y copia su **Bearer Token** (token de solo-app, no hace falta OAuth de usuario).
-3. El campo "usuario" es el nombre de la cuenta sin el `@` (por ejemplo `mi_empresa`).
+**Lo que queda registrado en la Bitácora:** conectar, renovar, sincronizar, fallar una sincronización, requerir reconexión y desconectar — nunca las credenciales en sí.
 
 ### Qué significa cada número por plataforma
 
-La sincronización usa, para cada plataforma, los campos que su API pública realmente expone — no son los mismos conceptos exactos en todas, así que aquí está el mapeo real para leer bien las tarjetas:
+La sincronización usa, para cada plataforma, los campos que su API pública realmente expone — no son los mismos conceptos exactos en todas:
 
-| Plataforma | Me gusta | Interacciones | Impresiones |
+| Plataforma | Seguidores | Por publicación | Vistas / impresiones |
 |---|---|---|---|
-| Facebook | Total de "Me gusta" de la página | Interacciones con publicaciones (28 días) | Impresiones de la página (28 días) |
-| Instagram | Seguidores de la cuenta | Cuentas alcanzadas con interacción (28 días) | Alcance (28 días) |
-| TikTok | Total histórico de "me gusta" de la cuenta | No disponible con la API gratuita (queda en 0) | No disponible con la API gratuita (queda en 0) |
-| YouTube | Suma de "me gusta" de los últimos 10 videos | Me gusta + comentarios de esos mismos videos | Vistas de esos mismos videos |
-| X | Suma de "me gusta" de las últimas 10 publicaciones | Me gusta + retweets + respuestas + citas de esas publicaciones | Impresiones de esas publicaciones (si tu nivel de API las incluye) |
+| Facebook | Total de "me gusta" de la página | Me gusta, comentarios y compartidos de cada publicación | Impresiones de cada publicación, cuando Meta las expone; si no, "No disponible" |
+| Instagram | Seguidores de la cuenta | Me gusta y comentarios de cada publicación | "No disponible" (este alcance de la API no expone impresiones por publicación) |
+| TikTok | Seguidores de la cuenta | Me gusta, comentarios y compartidos de cada video | Vistas de cada video; impresiones a nivel de cuenta no disponibles con esta API |
+| YouTube | Suscriptores del canal (si el propio canal no los oculta) | Me gusta y comentarios de cada video | Vistas de cada video; impresiones no disponibles con esta API |
 
-**Dos límites honestos que hay que conocer:**
+### Por qué X (antes Twitter) no está en este módulo
 
-- **TikTok:** su API gratuita (Login Kit / Display API) no expone interacciones ni impresiones a nivel de cuenta, solo seguidores, videos y el total de "me gusta" acumulado. Para tener esos otros dos números haría falta la TikTok for Business API con una cuenta de anuncios, que es un proceso de aprobación distinto y más lento.
-- **Meta (Facebook/Instagram) cambia de vez en cuando los nombres de sus métricas de Insights.** Si una tarjeta muestra un error mencionando una métrica desconocida o dada de baja, es casi seguro que Meta renombró o retiró ese nombre; revisa la documentación vigente de "Page Insights" o "Instagram Insights" en [developers.facebook.com](https://developers.facebook.com/docs/graph-api) y, si cambió, es un solo nombre a actualizar en `nexus-control-api/app/services/redes_sociales/meta.py` (las constantes `METRICA_IMPRESIONES_PAGINA`, `METRICA_INTERACCIONES_PAGINA`, `METRICA_ALCANCE_INSTAGRAM` y `METRICA_CUENTAS_ALCANZADAS_INSTAGRAM`, al principio del archivo).
+Esta entrega rehízo el módulo de redes sociales para usar el inicio de sesión real (OAuth) de Facebook, Instagram, TikTok y YouTube; X no se incluyó en esta nueva versión. El módulo anterior sí tenía un cliente de X con un token pegado a mano, y se retiró junto con todo el sistema de pegar credenciales. Si más adelante se necesita, se agrega como un adaptador nuevo siguiendo el mismo patrón que los otros cuatro (interfaz `SocialProvider` en `nexus-control-api/app/services/social/providers/`), sin tocar el resto del módulo.
 
-Este mapeo se construyó a partir de la documentación pública de cada API (no hubo manera de probarlo contra las redes sociales reales durante el desarrollo, porque este entorno no tiene salida a esos servidores). La primera sincronización real que hagas, con tus propias credenciales, es la verdadera prueba; si algo no calza, el mensaje de "Último error" de la tarjeta trae la respuesta exacta de la plataforma para saber qué ajustar.
+### Límites honestos que hay que conocer
+
+- **Meta (Facebook/Instagram) y TikTok exigen pasar por la revisión de su app** ("App Review") para que cualquier cliente, y no solo las cuentas de prueba del desarrollador, pueda conectar su cuenta. Mientras eso no se complete, solo las cuentas agregadas como administrador/desarrollador/tester en el panel de esa red pueden conectarse; `CONFIGURAR_REDES_SOCIALES.md` explica ese trámite.
+- **YouTube/Google, mientras la app no esté verificada, deja de renovar el acceso cada 7 días**, obligando a reconectar el canal cada semana. `CONFIGURAR_REDES_SOCIALES.md` explica cómo pasar la app a producción para quitar ese límite.
+- Este flujo de OAuth no se pudo probar en vivo contra Facebook, TikTok ni Google durante el desarrollo, porque este entorno no tiene salida de red hacia esos servidores; sí se probó a fondo con pruebas automatizadas que verifican la lógica completa (estado, cifrado, renovación, reintentos, sincronización) simulando las respuestas de cada API. La primera conexión real que hagas, con tus propias credenciales, es la verdadera prueba del flujo completo; si algo no calza, el "Último error" de la tarjeta trae el mensaje exacto que devolvió la plataforma.
 
 ## Módulo de Reportes
 
@@ -151,12 +137,13 @@ Vive en `nexus-control-android/`, es un proyecto de Android Studio (Kotlin) y ti
 
 | Carpeta | Contenido |
 |---|---|
-| `nexus-control-api/` | API Flask: fábrica de la app, extensiones, seguridad HTTP, límite de peticiones, CORS, Socket.IO, bitácora, migraciones Alembic, Docker (API + PostgreSQL + Redis), súper admin, login con JWT y 2FA, Administradores, Bitácora, Equipos (PC y Android) y Categorías, los endpoints para el agente (enrolamiento, inventario, señal de vida, catálogo de apps instaladas), la matriz de control de aplicaciones (`/api/equipos/<id>/aplicaciones`, `/api/equipos/<id>/uso`) y sus endpoints para el agente (`/api/agente/politicas`, `/api/agente/uso`, `/api/agente/apps-instaladas`), el resumen del Inicio (`/api/dashboard/resumen`), las métricas de redes sociales (`/api/metricas-sociales`), las conexiones y la sincronización automática de redes sociales (`/api/conexiones-sociales`, cifrado de credenciales, clientes de Facebook/Instagram/TikTok/YouTube/X y el programador en segundo plano) y los reportes en PDF/CSV/Excel (`/api/reportes/general`, `/api/reportes/uso`, `/api/reportes/auditoria`). |
-| `nexus-control-frontend/` | React + Vite + Tailwind. Login, 2FA, layout con menú lateral y búsqueda `⌘K`, Mi perfil, Administradores, Bitácora, Equipos (tarjetas, filtros, alta con selector de tipo PC/Android y código de enrolamiento — el hostname/IP/sistema operativo ya no se escriben a mano —, y la pestaña "Aplicaciones" con la matriz de control, el catálogo de apps instaladas en Android y el uso por aplicación), Inicio (indicadores en vivo y resumen de redes sociales, manual o automático), **Redes sociales** (conectar Facebook/Instagram/TikTok/YouTube/X, ver su estado y sincronizar) y Reportes (descarga de los tres reportes en PDF/CSV/Excel), todo reflejado en vivo cuando un agente real se conecta o reporta uso. |
+| `nexus-control-api/` | API Flask: fábrica de la app, extensiones, seguridad HTTP, límite de peticiones, CORS, Socket.IO, bitácora, migraciones Alembic, Docker (API + PostgreSQL + Redis), súper admin, login con JWT y 2FA, Administradores, Bitácora, Equipos (PC y Android) y Categorías, los endpoints para el agente (enrolamiento, inventario, señal de vida, catálogo de apps instaladas), la matriz de control de aplicaciones (`/api/equipos/<id>/aplicaciones`, `/api/equipos/<id>/uso`) y sus endpoints para el agente (`/api/agente/politicas`, `/api/agente/uso`, `/api/agente/apps-instaladas`), el resumen del Inicio (`/api/dashboard/resumen`), las métricas manuales de redes sociales (`/api/metricas-sociales`), el módulo de **Redes sociales** con OAuth 2.0 real (`/api/redes-sociales`: conectar, callback, sincronizar, desconectar, salud, estado del sistema y resumen de actividad), cifrado de tokens con AES-256-GCM, los adaptadores de Facebook/Instagram/TikTok/YouTube y el sincronizador en segundo plano con reintentos, y los reportes en PDF/CSV/Excel (`/api/reportes/general`, `/api/reportes/uso`, `/api/reportes/auditoria`). |
+| `nexus-control-frontend/` | React + Vite + Tailwind. Login, 2FA, layout con menú lateral y búsqueda `⌘K`, Mi perfil, Administradores, Bitácora, Equipos (tarjetas, filtros, alta con selector de tipo PC/Android y código de enrolamiento — el hostname/IP/sistema operativo ya no se escriben a mano —, y la pestaña "Aplicaciones" con la matriz de control, el catálogo de apps instaladas en Android y el uso por aplicación), Inicio (indicadores en vivo y resumen de redes sociales, manual o automático), **Redes sociales** (conectar Facebook/Instagram/TikTok/YouTube con OAuth real, panel de administración, estado del sistema y resumen de actividad) y Reportes (descarga de los tres reportes en PDF/CSV/Excel), todo reflejado en vivo cuando un agente real se conecta o reporta uso. |
 | `nexus-control-agent/` | El programa en Python que se instala en cada PC: se enrola con el código, manda su inventario y una señal de vida cada 30 segundos, aplica la matriz de control (bloqueo y límites de tiempo) y reporta el uso real de cada aplicación. Tiene su propio `INICIAR_AGENTE_EN_PC.bat` y README. |
 | `nexus-control-android/` | Proyecto de Android Studio (Kotlin) que se instala en celulares y tablets: se enrola con el código, sube su inventario y el catálogo de apps instaladas, y aplica la matriz de control con una pantalla de bloqueo propia de Nexus Obsidian. Tiene su propio README, un `INSTALAR_APK_EN_PC.bat` y un flujo de GitHub Actions que lo compila y le corre las pruebas. |
 | `INICIAR_EN_PC.bat` y `DETENER_EN_PC.bat` | Arrancan y apagan el panel y el servidor con doble clic. |
-| `scripts/` | Script de PowerShell que crea el `.env` con claves aleatorias. |
+| `CONFIGURAR_REDES_SOCIALES.md` | Guía paso a paso, sin dar por hecho que sabes de desarrollo, para dar de alta Facebook, Instagram, TikTok y YouTube en sus paneles de desarrolladores y conectar el módulo de Redes sociales. |
+| `scripts/` | Script de PowerShell que crea el `.env` con claves aleatorias (incluye la clave de cifrado de los tokens de redes sociales). |
 | `docs/` | Capturas de las pantallas principales. |
 
 ## Requisitos
@@ -243,7 +230,7 @@ Servidor (con los contenedores levantados):
 docker compose run --rm api python -m pytest -q
 ```
 
-Debes ver `228 passed`.
+Debes ver `256 passed` (incluye las pruebas del nuevo módulo de Redes sociales con OAuth; una de las pruebas de 2FA espera hasta 30 segundos a propósito, por eso la corrida completa toma unos minutos).
 
 Frontend:
 
@@ -251,7 +238,7 @@ Frontend:
 npm test
 ```
 
-Debes ver `48 passed`.
+Debes ver `52 passed`.
 
 Agente de Windows (ver el README de `nexus-control-agent/`): `35 passed`.
 

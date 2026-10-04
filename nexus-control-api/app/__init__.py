@@ -78,6 +78,7 @@ def create_app():
     app.config['SESSION_COOKIE_SECURE'] = True
 
     is_prod = os.environ.get('FLASK_ENV', '').strip().lower() == 'production'
+    app.config['TESTING'] = os.environ.get('FLASK_ENV', '').strip().lower() == 'testing'
 
     app.config['RATELIMIT_DEFAULT'] = "2000 per day, 500 per hour"
     app.config['RATELIMIT_HEADERS_ENABLED'] = True

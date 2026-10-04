@@ -251,34 +251,55 @@ def _iniciar_tareas_de_fondo(app) -> None:
 
 _sincronizacion_redes_iniciada = False
 
+CICLO_SINCRONIZACION_REDES_SEGUNDOS = 60
+BLOQUEO_SINCRONIZACION_SEGUNDOS = 300
 
-def _intervalo_sincronizacion_segundos() -> int:
-    try:
-        minutos = int(os.environ.get('INTERVALO_SINCRONIZACION_REDES_MINUTOS', '60'))
-    except ValueError:
-        minutos = 60
-    return max(minutos, 5) * 60
+
+def _ejecutar_ciclo_sincronizacion_redes() -> None:
+    from datetime import timedelta
+
+    from app.extensions import db
+    from app.models import SocialConnection, _now_utc
+    from app.services.social.fechas import asegurar_utc
+    from app.services.social.orchestrator import sincronizar_conexion
+
+    ahora = _now_utc()
+    conexiones = SocialConnection.query.filter(SocialConnection.access_token_cifrado.isnot(None)).all()
+    for conexion in conexiones:
+        if not conexion.conectada():
+            continue
+        bloqueado_hasta = asegurar_utc(conexion.bloqueado_hasta)
+        if bloqueado_hasta and bloqueado_hasta > ahora:
+            continue
+        fecha_objetivo = asegurar_utc(conexion.proximo_reintento_at or conexion.proxima_sincronizacion_at)
+        if fecha_objetivo is not None and fecha_objetivo > ahora:
+            continue
+
+        conexion.bloqueado_hasta = ahora + timedelta(seconds=BLOQUEO_SINCRONIZACION_SEGUNDOS)
+        db.session.commit()
+        try:
+            sincronizar_conexion(conexion, disparado_por='programado')
+        except Exception as e:
+            _logger.warning('sincronización programada de %s falló: %s', conexion.plataforma, e)
+        finally:
+            conexion.bloqueado_hasta = None
+            db.session.commit()
 
 
 def _iniciar_sincronizacion_redes_sociales(app) -> None:
     global _sincronizacion_redes_iniciada
     if _sincronizacion_redes_iniciada or app.config.get('TESTING'):
         return
-    if os.environ.get('SINCRONIZAR_REDES_SOCIALES', 'true').strip().lower() == 'false':
-        return
     _sincronizacion_redes_iniciada = True
-
-    intervalo_segundos = _intervalo_sincronizacion_segundos()
 
     def _tarea():
         with app.app_context():
             while True:
-                socketio.sleep(intervalo_segundos)
+                socketio.sleep(CICLO_SINCRONIZACION_REDES_SEGUNDOS)
                 try:
-                    from app.services.sincronizacion_redes import sincronizar_todas
-                    sincronizar_todas()
+                    _ejecutar_ciclo_sincronizacion_redes()
                 except Exception as e:
-                    _logger.warning('sincronización de redes sociales falló: %s', e)
+                    _logger.warning('ciclo de sincronización de redes sociales falló: %s', e)
                 finally:
                     from app.extensions import db
                     db.session.remove()

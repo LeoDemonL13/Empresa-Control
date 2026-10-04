@@ -1,9 +1,11 @@
+import base64
 import ipaddress
 import json
 import os
 
 import redis
 from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from flask import request as flask_request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -64,6 +66,59 @@ class EncryptedJSON(TypeDecorator):
         try:
             crudo = self._fernet().decrypt(value.encode()).decode()
             return json.loads(crudo)
+        except Exception:
+            return None
+
+
+def _aesgcm_desde_env():
+    key_b64 = os.environ.get('SOCIAL_TOKEN_ENCRYPTION_KEY', '').strip()
+    if not key_b64:
+        raise RuntimeError(
+            "CRÍTICO: SOCIAL_TOKEN_ENCRYPTION_KEY no configurada. "
+            "Genera una clave con: python -c \"import base64, os; "
+            "print(base64.urlsafe_b64encode(os.urandom(32)).decode())\""
+        )
+    try:
+        key = base64.urlsafe_b64decode(key_b64.encode())
+    except Exception as exc:
+        raise RuntimeError(
+            "CRÍTICO: SOCIAL_TOKEN_ENCRYPTION_KEY no es base64 urlsafe válido."
+        ) from exc
+    if len(key) != 32:
+        raise RuntimeError(
+            "CRÍTICO: SOCIAL_TOKEN_ENCRYPTION_KEY debe decodificar a 32 bytes "
+            "(AES-256-GCM)."
+        )
+    return AESGCM(key)
+
+
+class SocialEncryptedString(TypeDecorator):
+    """Cadena cifrada con AES-256-GCM (autenticado), para tokens OAuth.
+
+    Independiente de EncryptedString/EncryptedJSON (Fernet, usados para TOTP):
+    usa su propia clave maestra (SOCIAL_TOKEN_ENCRYPTION_KEY) para que la
+    rotación o el compromiso de una clave no afecte a la otra.
+    """
+
+    impl = Text
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        aes = _aesgcm_desde_env()
+        nonce = os.urandom(12)
+        cifrado = aes.encrypt(nonce, value.encode(), None)
+        return base64.urlsafe_b64encode(nonce + cifrado).decode()
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        try:
+            crudo = base64.urlsafe_b64decode(value.encode())
+            nonce, cifrado = crudo[:12], crudo[12:]
+            aes = _aesgcm_desde_env()
+            return aes.decrypt(nonce, cifrado, None).decode()
         except Exception:
             return None
 

@@ -164,6 +164,7 @@ $base = [System.IO.File]::ReadAllLines($rutaEjemplo)
 $valores = [ordered]@{
     'SECRET_KEY' = (Nueva-ClaveUrlSegura)
     'TOTP_ENCRYPTION_KEY' = (Nueva-ClaveUrlSegura)
+    'SOCIAL_TOKEN_ENCRYPTION_KEY' = (Nueva-ClaveUrlSegura)
     'POSTGRES_PASSWORD' = (Nueva-ClaveHex 24)
     'CREAR_SUPER_ADMIN' = 'true'
     'SUPERADMIN_USERNAME' = "'$Usuario'"

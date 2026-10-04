@@ -13,12 +13,16 @@ vi.mock('../../api/auth', () => ({
   logout: vi.fn(),
 }))
 
-vi.mock('../../api/conexionesSociales', () => ({
+vi.mock('../../api/redesSociales', () => ({
   listarConexiones: vi.fn(),
-  guardarConexion: vi.fn(),
-  eliminarConexion: vi.fn(),
+  obtenerUrlConexion: vi.fn(),
+  actualizarSeguimientoCuenta: vi.fn(),
   sincronizarConexion: vi.fn(),
   sincronizarTodas: vi.fn(),
+  desconectarConexion: vi.fn(),
+  obtenerSalud: vi.fn(),
+  obtenerEstadoSistema: vi.fn(),
+  obtenerResumen: vi.fn(),
 }))
 
 vi.mock('socket.io-client', () => ({
@@ -26,24 +30,36 @@ vi.mock('socket.io-client', () => ({
 }))
 
 import * as authApi from '../../api/auth'
-import * as conexionesApi from '../../api/conexionesSociales'
+import * as redesApi from '../../api/redesSociales'
 
-const PLATAFORMAS_ORDEN = ['facebook', 'instagram', 'tiktok', 'youtube', 'x']
+const PLATAFORMAS_ORDEN = ['facebook', 'instagram', 'tiktok', 'youtube']
 
-function conexionesVacias() {
-  return PLATAFORMAS_ORDEN.map((plataforma) => ({
+function conexionVacia(plataforma) {
+  return {
     plataforma,
     conectada: false,
+    estado: 'DISCONNECTED',
+    icono: '⚫',
+    estado_texto: 'No conectado',
+    configurada: true,
+    cuenta_externa: null,
+    cuentas: [],
     ultima_sincronizacion: null,
+    proxima_sincronizacion: null,
     ultimo_error: null,
-    actualizado_por: null,
-    updated_at: null,
-  }))
+    errores_consecutivos: 0,
+    conectado_por: null,
+    conectado_at: null,
+  }
 }
 
-function montar() {
+function conexionesVacias() {
+  return PLATAFORMAS_ORDEN.map(conexionVacia)
+}
+
+function montar(initialEntries = ['/redes-sociales']) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <AuthProvider>
         <SocketProvider>
           <RedesSociales />
@@ -68,101 +84,155 @@ function comoAdmin() {
 }
 
 beforeEach(() => {
-  conexionesApi.listarConexiones.mockResolvedValue(conexionesVacias())
+  redesApi.listarConexiones.mockResolvedValue(conexionesVacias())
+  redesApi.obtenerEstadoSistema.mockResolvedValue({
+    intervalo_minutos: 15,
+    plataformas: PLATAFORMAS_ORDEN.map((plataforma) => ({
+      plataforma, conectada: false, estado: 'DISCONNECTED', ultima_sincronizacion: null,
+      proxima_sincronizacion: null, ultimo_tiempo_respuesta_ms: null, ultimos_elementos_actualizados: null,
+      ultimo_resultado: null,
+    })),
+  })
+  redesApi.obtenerResumen.mockResolvedValue({
+    desde: '2026-01-01T00:00:00Z', hasta: '2026-01-08T00:00:00Z', plataforma: null,
+    publicaciones: 0, interacciones: 0, impresiones: null, tasa_engagement_promedio: null,
+    seguidores_inicio: null, seguidores_fin: null, mejor_publicacion: null, peor_publicacion: null,
+    por_cuenta: [], narrativa: 'En los últimos 7.0 día(s), Todas las redes registró 0 publicación(es).',
+  })
 })
 
-it('muestra las 5 plataformas soportadas', async () => {
+it('muestra las 4 plataformas soportadas', async () => {
   comoSuperAdmin()
   montar()
   await waitFor(() => expect(screen.getByText('Facebook')).toBeInTheDocument())
   expect(screen.getByText('Instagram')).toBeInTheDocument()
   expect(screen.getByText('TikTok')).toBeInTheDocument()
   expect(screen.getByText('YouTube')).toBeInTheDocument()
-  expect(screen.getByText('X', { selector: 'p' })).toBeInTheDocument()
-  expect(screen.getAllByText('No conectada')).toHaveLength(5)
+  expect(screen.getAllByText(/No conectado/)).toHaveLength(4)
 })
 
-it('un administrador normal no ve los botones para guardar o quitar credenciales', async () => {
+it('un administrador normal no ve el botón para conectar plataformas', async () => {
   comoAdmin()
   montar()
   await waitFor(() => expect(screen.getByText('Facebook')).toBeInTheDocument())
-  expect(screen.queryByText('Configurar')).not.toBeInTheDocument()
+  expect(screen.queryByText(/Conectar con/)).not.toBeInTheDocument()
   expect(
-    screen.getByText(
-      'Solo el súper administrador puede guardar o quitar credenciales; cualquier administrador puede sincronizar.',
-    ),
+    screen.getByText(/Solo el súper administrador puede conectar, reconectar o desconectar/),
   ).toBeInTheDocument()
 })
 
-it('el súper administrador guarda las credenciales de YouTube', async () => {
+it('el súper administrador inicia la conexión con Facebook', async () => {
   comoSuperAdmin()
-  conexionesApi.guardarConexion.mockResolvedValue({
-    plataforma: 'youtube', conectada: true, ultima_sincronizacion: null, ultimo_error: null,
-  })
+  redesApi.obtenerUrlConexion.mockResolvedValue({ url: 'https://www.facebook.com/oauth?state=x' })
   montar()
-  await waitFor(() => expect(screen.getByText('YouTube')).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByText('Facebook')).toBeInTheDocument())
 
-  const botones = screen.getAllByRole('button', { name: 'Configurar' })
-  await userEvent.click(botones[PLATAFORMAS_ORDEN.indexOf('youtube')])
+  await userEvent.click(screen.getByRole('button', { name: /Conectar con Facebook/i }))
 
-  await userEvent.type(screen.getByPlaceholderText('AIzaSy...'), 'clave-de-prueba')
-  await userEvent.type(screen.getByPlaceholderText('UCxxxxxxxxxxxxxxxxxxxxxx'), 'UC12345')
-  await userEvent.click(screen.getByRole('button', { name: 'Guardar credenciales' }))
-
-  await waitFor(() =>
-    expect(conexionesApi.guardarConexion).toHaveBeenCalledWith('youtube', {
-      clave_api: 'clave-de-prueba',
-      id_canal: 'UC12345',
-    }),
-  )
+  await waitFor(() => expect(redesApi.obtenerUrlConexion).toHaveBeenCalledWith('facebook'))
 })
 
-it('nunca expone las credenciales ya guardadas en la tarjeta', async () => {
+it('muestra un aviso cuando la plataforma no está configurada en el servidor', async () => {
   comoSuperAdmin()
-  conexionesApi.listarConexiones.mockResolvedValue([
-    {
-      plataforma: 'facebook',
-      conectada: true,
-      ultima_sincronizacion: '2026-10-01T10:00:00Z',
-      ultimo_error: null,
-      actualizado_por: 'root@nexus.mx',
-      updated_at: '2026-10-01T10:00:00Z',
-    },
+  redesApi.listarConexiones.mockResolvedValue([
+    { ...conexionVacia('facebook'), configurada: false },
     ...conexionesVacias().slice(1),
   ])
   montar()
-  await waitFor(() => expect(screen.getByText('Conectada')).toBeInTheDocument())
-  expect(screen.queryByText(/EAA|token/i)).not.toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Sincronizar ahora/i })).toBeInTheDocument()
+  await waitFor(() =>
+    expect(screen.getByText(/no tiene configuradas sus credenciales de aplicación/)).toBeInTheDocument(),
+  )
+  expect(screen.queryByRole('button', { name: /Conectar con Facebook/i })).not.toBeInTheDocument()
 })
 
 it('sincroniza una plataforma conectada y avisa del resultado', async () => {
   comoSuperAdmin()
-  conexionesApi.listarConexiones.mockResolvedValue([
-    { plataforma: 'facebook', conectada: true, ultima_sincronizacion: null, ultimo_error: null, actualizado_por: null, updated_at: null },
+  redesApi.listarConexiones.mockResolvedValue([
+    {
+      ...conexionVacia('facebook'), conectada: true, estado: 'CONNECTED', icono: '🟢', estado_texto: 'Conectado',
+      cuenta_externa: 'Empresa Demo',
+    },
     ...conexionesVacias().slice(1),
   ])
-  conexionesApi.sincronizarConexion.mockResolvedValue({ ok: true, error: null, conexion: {} })
+  redesApi.sincronizarConexion.mockResolvedValue({ ok: true, error: null, conexion: {} })
   montar()
   await waitFor(() => expect(screen.getByRole('button', { name: /Sincronizar ahora/i })).toBeInTheDocument())
 
   await userEvent.click(screen.getByRole('button', { name: /Sincronizar ahora/i }))
 
-  await waitFor(() => expect(conexionesApi.sincronizarConexion).toHaveBeenCalledWith('facebook'))
+  await waitFor(() => expect(redesApi.sincronizarConexion).toHaveBeenCalledWith('facebook'))
 })
 
-it('el súper administrador puede desconectar una plataforma', async () => {
+it('abre el panel de administración y permite alternar el seguimiento de una cuenta', async () => {
   comoSuperAdmin()
-  vi.spyOn(window, 'confirm').mockReturnValue(true)
-  conexionesApi.listarConexiones.mockResolvedValue([
-    { plataforma: 'facebook', conectada: true, ultima_sincronizacion: null, ultimo_error: null, actualizado_por: null, updated_at: null },
+  redesApi.listarConexiones.mockResolvedValue([
+    {
+      ...conexionVacia('facebook'), conectada: true, estado: 'CONNECTED', icono: '🟢', estado_texto: 'Conectado',
+      cuenta_externa: 'Empresa Demo',
+    },
     ...conexionesVacias().slice(1),
   ])
-  conexionesApi.eliminarConexion.mockResolvedValue({ ok: true })
+  redesApi.obtenerSalud.mockResolvedValue({
+    plataforma: 'facebook', conectada: true, estado: 'CONNECTED', icono: '🟢', estado_texto: 'Conectado',
+    configurada: true, cuenta_externa: 'Empresa Demo', alcance: 'pages_show_list',
+    cuentas: [{ id: 10, id_externo: 'pagina-1', nombre: 'Página de prueba', usuario: null, url_imagen: null, seguimiento_activo: true }],
+    ultima_sincronizacion: null, proxima_sincronizacion: null, ultimo_error: null, errores_consecutivos: 0,
+    conectado_por: 'root@nexus.mx', conectado_at: null, errores_recientes: [],
+  })
+  redesApi.actualizarSeguimientoCuenta.mockResolvedValue({ ok: true })
   montar()
-  await waitFor(() => expect(screen.getByRole('button', { name: /Desconectar/i })).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Administrar' })).toBeInTheDocument())
 
-  await userEvent.click(screen.getByRole('button', { name: /Desconectar/i }))
+  await userEvent.click(screen.getByRole('button', { name: 'Administrar' }))
 
-  await waitFor(() => expect(conexionesApi.eliminarConexion).toHaveBeenCalledWith('facebook'))
+  await waitFor(() => expect(screen.getByText('Página de prueba')).toBeInTheDocument())
+  await userEvent.click(screen.getByRole('button', { name: 'Siguiendo' }))
+
+  await waitFor(() =>
+    expect(redesApi.actualizarSeguimientoCuenta).toHaveBeenCalledWith('facebook', 10, false),
+  )
+})
+
+it('un administrador normal ve el panel de administración en solo lectura', async () => {
+  comoAdmin()
+  redesApi.listarConexiones.mockResolvedValue([
+    {
+      ...conexionVacia('facebook'), conectada: true, estado: 'CONNECTED', icono: '🟢', estado_texto: 'Conectado',
+      cuenta_externa: 'Empresa Demo',
+    },
+    ...conexionesVacias().slice(1),
+  ])
+  redesApi.obtenerSalud.mockResolvedValue({
+    plataforma: 'facebook', conectada: true, estado: 'CONNECTED', icono: '🟢', estado_texto: 'Conectado',
+    configurada: true, cuenta_externa: 'Empresa Demo', alcance: 'pages_show_list',
+    cuentas: [], ultima_sincronizacion: null, proxima_sincronizacion: null, ultimo_error: null,
+    errores_consecutivos: 0, conectado_por: 'root@nexus.mx', conectado_at: null, errores_recientes: [],
+  })
+  montar()
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Administrar' })).toBeInTheDocument())
+  await userEvent.click(screen.getByRole('button', { name: 'Administrar' }))
+
+  await waitFor(() => expect(screen.getByText('Conectado')).toBeInTheDocument())
+  expect(screen.queryByRole('button', { name: 'Reconectar' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Desconectar' })).not.toBeInTheDocument()
+})
+
+it('muestra el resumen de actividad con la narrativa generada', async () => {
+  comoAdmin()
+  montar()
+  await waitFor(() =>
+    expect(screen.getByText(/En los últimos 7.0 día\(s\)/)).toBeInTheDocument(),
+  )
+})
+
+it('muestra el estado del sistema con el intervalo configurado', async () => {
+  comoAdmin()
+  montar()
+  await waitFor(() => expect(screen.getByText(/cada 15 min/)).toBeInTheDocument())
+})
+
+it('avisa cuando la plataforma quedó conectada tras volver del proveedor', async () => {
+  comoSuperAdmin()
+  montar(['/redes-sociales?conectado=facebook'])
+  await waitFor(() => expect(screen.getByText('Facebook')).toBeInTheDocument())
 })

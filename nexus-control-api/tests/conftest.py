@@ -1,3 +1,4 @@
+import base64
 import os
 import sys
 
@@ -5,8 +6,20 @@ from cryptography.fernet import Fernet
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+os.environ.setdefault('FLASK_ENV', 'testing')
 os.environ.setdefault('SECRET_KEY', 'clave-de-pruebas-solo-para-tests-0123456789')
 os.environ.setdefault('TOTP_ENCRYPTION_KEY', Fernet.generate_key().decode())
+os.environ.setdefault('SOCIAL_TOKEN_ENCRYPTION_KEY', base64.urlsafe_b64encode(os.urandom(32)).decode())
+os.environ.setdefault('META_APP_ID', 'meta-app-id-pruebas')
+os.environ.setdefault('META_APP_SECRET', 'meta-app-secret-pruebas')
+os.environ.setdefault('META_REDIRECT_URI', 'http://localhost:5000/api/redes-sociales/callback/facebook')
+os.environ.setdefault('TIKTOK_CLIENT_KEY', 'tiktok-client-key-pruebas')
+os.environ.setdefault('TIKTOK_CLIENT_SECRET', 'tiktok-client-secret-pruebas')
+os.environ.setdefault('TIKTOK_REDIRECT_URI', 'http://localhost:5000/api/redes-sociales/callback/tiktok')
+os.environ.setdefault('GOOGLE_CLIENT_ID', 'google-client-id-pruebas')
+os.environ.setdefault('GOOGLE_CLIENT_SECRET', 'google-client-secret-pruebas')
+os.environ.setdefault('GOOGLE_REDIRECT_URI', 'http://localhost:5000/api/redes-sociales/callback/youtube')
+os.environ.setdefault('SOCIAL_SYNC_INTERVAL_MINUTES', '15')
 os.environ['SOCKETIO_ASYNC_MODE'] = 'threading'
 os.environ.setdefault('REDIS_URL', 'redis://127.0.0.1:6399/0')
 os.environ['SOCKETIO_MESSAGE_QUEUE'] = 'false'
