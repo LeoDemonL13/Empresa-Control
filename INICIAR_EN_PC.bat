@@ -112,10 +112,14 @@ echo.
 goto :env_listo
 
 :api_no_responde
+%DC% logs --tail 60 api > "%LOGTMP%" 2>&1
+findstr /c:"password authentication failed" "%LOGTMP%" >nul
+if not errorlevel 1 goto :password_desincronizada
+
 echo.
 echo [X] El servidor no respondio a tiempo. Ultimos mensajes:
 echo.
-%DC% logs --tail 40 api
+type "%LOGTMP%"
 goto :fin_error
 
 :error_compose

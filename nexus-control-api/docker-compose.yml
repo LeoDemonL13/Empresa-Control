@@ -4,7 +4,7 @@ services:
   api:
     build:
       context: .
-    restart: unless-stopped
+    restart: on-failure:5
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:?falta POSTGRES_USER en .env}:${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}@db:5432/${POSTGRES_DB:?falta POSTGRES_DB en .env}

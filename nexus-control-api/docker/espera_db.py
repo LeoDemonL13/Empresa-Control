@@ -41,13 +41,15 @@ def main() -> int:
                 conexion.execute(text('SELECT 1'))
             print('[entrypoint] La base de datos responde.', flush=True)
             return 0
-        except Exception as exc:                                                        
+        except Exception as exc:
             ultimo_error = exc
+            if 'password authentication failed' in str(exc).lower():
+                break
             print('[entrypoint] Esperando a la base de datos...', flush=True)
             time.sleep(INTERVALO)
 
     print(
-        f'[entrypoint] CRÍTICO: la base de datos no respondió en {TIEMPO_MAXIMO}s.\n'
+        f'[entrypoint] CRÍTICO: la base de datos no respondió a tiempo.\n'
         f'             Último error: {ultimo_error}',
         file=sys.stderr,
         flush=True,
