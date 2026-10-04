@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --nx-accent: 239 31 43;
+  --nx-accent-strong: 220 23 36;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    @apply bg-brand-200 text-brand-900;
+  }
+
+  .dark ::selection {
+    @apply bg-brand-700 text-white;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1535px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 1536px) and (max-width: 1919px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 1920px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+@layer components {
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-obsidian-main;
+  }
+
+  .nx-label {
+    @apply font-mono text-[10px] font-medium uppercase tracking-widest text-ink-500 dark:text-obsidian-muted;
+  }
+
+  .nx-surface {
+    @apply rounded-xl border border-ink-200 bg-white shadow-card dark:border-obsidian-line dark:bg-obsidian-card dark:shadow-none;
+  }
+
+  .nx-nav-section {
+    @apply px-4 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-wider text-ink-400/70;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203 213 225 / 0.5) transparent;
+  }
+
+  .dark .scrollbar-thin {
+    scrollbar-color: rgb(51 65 85 / 0.6) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgb(203 213 225 / 0.55);
+    border-radius: 9999px;
+    transition: background-color 200ms;
+  }
+
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgb(51 65 85 / 0.6);
+  }
+
+  .scrollbar-dark {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 0.08) transparent;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-thumb {
+    background-color: rgb(255 255 255 / 0.08);
+    border-radius: 9999px;
+    transition: background-color 200ms;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

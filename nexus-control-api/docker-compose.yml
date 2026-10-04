@@ -1,0 +1,70 @@
+name: nexus-control-dev
+
+services:
+  api:
+    build:
+      context: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:?falta POSTGRES_USER en .env}:${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}@db:5432/${POSTGRES_DB:?falta POSTGRES_DB en .env}
+      REDIS_URL: redis://redis:6379/0
+      SOCKETIO_ASYNC_MODE: gevent
+      TZ: America/Mexico_City
+      FORWARDED_ALLOW_IPS: "127.0.0.1"
+    ports:
+      - "5001:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command:
+      - gunicorn
+      - --workers=1
+      - --worker-class=geventwebsocket.gunicorn.workers.GeventWebSocketWorker
+      - --worker-connections=1000
+      - --bind=0.0.0.0:8000
+      - --timeout=120
+      - --reload
+      - --access-logfile=-
+      - --error-logfile=-
+      - --capture-output
+      - run:app
+
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?falta POSTGRES_USER en .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: ${POSTGRES_DB:?falta POSTGRES_DB en .env}
+      TZ: America/Mexico_City
+    command:
+      - postgres
+      - -c
+      - timezone=America/Mexico_City
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - datos_postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - datos_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  datos_postgres:
+  datos_redis:
