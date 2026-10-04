@@ -58,9 +58,11 @@ social y actualizar la variable en `.env`; el código no necesita cambios.
 
 ## 1. Facebook e Instagram (Meta)
 
-Facebook e Instagram comparten la misma aplicación de Meta, por eso usan las mismas tres
-variables (`META_APP_ID`, `META_APP_SECRET`, `META_REDIRECT_URI`) aunque se conecten por
-separado desde el panel.
+Facebook e Instagram comparten la misma aplicación de Meta, por eso usan el mismo
+`META_APP_ID` y `META_APP_SECRET`. La URL de redirección, en cambio, es **una por cada una**
+(`META_REDIRECT_URI` para Facebook y `META_INSTAGRAM_REDIRECT_URI` para Instagram), porque
+cada una regresa a una dirección distinta dentro del sistema — llena las dos, aunque solo
+vayas a usar una de las dos redes por ahora.
 
 **Requisito para Instagram:** la cuenta de Instagram debe ser una cuenta "Business" o "Creator"
 (no personal) y debe estar vinculada a una página de Facebook. Meta no permite conectar cuentas
@@ -76,14 +78,17 @@ personales de Instagram por API.
    - **Inicio de sesión con Facebook** (Facebook Login): habilita el flujo de autorización.
    - **API Graph de Instagram** (Instagram Graph API): habilita leer datos de Instagram.
 5. Dentro de "Inicio de sesión con Facebook" → "Configuración", en el campo
-   "URI de redirección de OAuth válidas" pega la URL de redirección (ver sección anterior,
-   usando `facebook` o `instagram` según cuál conectes; si vas a usar ambas, agrega las dos
-   URLs, una por línea).
+   "URI de redirección de OAuth válidas" pega **las dos** URLs de redirección (ver sección
+   anterior), una por línea:
+   - `.../api/redes-sociales/callback/facebook`
+   - `.../api/redes-sociales/callback/instagram`
 6. Ve a "Configuración" → "Básica" (panel principal de la app). Ahí verás:
    - **ID de la aplicación**: cópialo en `META_APP_ID`.
    - **Clave secreta**: haz clic en "Mostrar", confírmalo con tu contraseña, y cópialo en
      `META_APP_SECRET`. Trátalo como una contraseña: nunca lo compartas ni lo subas a internet.
-7. En `META_REDIRECT_URI` escribe la misma URL que pusiste en el paso 5.
+7. En `META_REDIRECT_URI` escribe la URL que termina en `/callback/facebook`, y en
+   `META_INSTAGRAM_REDIRECT_URI` la que termina en `/callback/instagram` (las mismas dos del
+   paso 5).
 8. Guarda el archivo `.env` y reinicia el servidor.
 
 ### Permisos que pide el sistema

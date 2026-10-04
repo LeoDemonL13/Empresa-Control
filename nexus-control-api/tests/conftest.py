@@ -13,6 +13,7 @@ os.environ.setdefault('SOCIAL_TOKEN_ENCRYPTION_KEY', base64.urlsafe_b64encode(os
 os.environ.setdefault('META_APP_ID', 'meta-app-id-pruebas')
 os.environ.setdefault('META_APP_SECRET', 'meta-app-secret-pruebas')
 os.environ.setdefault('META_REDIRECT_URI', 'http://localhost:5000/api/redes-sociales/callback/facebook')
+os.environ.setdefault('META_INSTAGRAM_REDIRECT_URI', 'http://localhost:5000/api/redes-sociales/callback/instagram')
 os.environ.setdefault('TIKTOK_CLIENT_KEY', 'tiktok-client-key-pruebas')
 os.environ.setdefault('TIKTOK_CLIENT_SECRET', 'tiktok-client-secret-pruebas')
 os.environ.setdefault('TIKTOK_REDIRECT_URI', 'http://localhost:5000/api/redes-sociales/callback/tiktok')

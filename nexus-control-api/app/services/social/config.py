@@ -26,6 +26,10 @@ def meta_redirect_uri():
     return _requerido('META_REDIRECT_URI')
 
 
+def meta_instagram_redirect_uri():
+    return _requerido('META_INSTAGRAM_REDIRECT_URI')
+
+
 def tiktok_client_key():
     return _requerido('TIKTOK_CLIENT_KEY')
 
@@ -51,8 +55,10 @@ def google_redirect_uri():
 
 
 def redirect_uri_para(plataforma):
-    if plataforma in ('facebook', 'instagram'):
+    if plataforma == 'facebook':
         return meta_redirect_uri()
+    if plataforma == 'instagram':
+        return meta_instagram_redirect_uri()
     if plataforma == 'tiktok':
         return tiktok_redirect_uri()
     if plataforma == 'youtube':
@@ -63,7 +69,7 @@ def redirect_uri_para(plataforma):
 def plataforma_configurada(plataforma):
     comprobadores = {
         'facebook': (meta_app_id, meta_app_secret, meta_redirect_uri),
-        'instagram': (meta_app_id, meta_app_secret, meta_redirect_uri),
+        'instagram': (meta_app_id, meta_app_secret, meta_instagram_redirect_uri),
         'tiktok': (tiktok_client_key, tiktok_client_secret, tiktok_redirect_uri),
         'youtube': (google_client_id, google_client_secret, google_redirect_uri),
     }

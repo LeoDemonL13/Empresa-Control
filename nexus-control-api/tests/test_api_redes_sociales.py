@@ -1,3 +1,4 @@
+import os
 from datetime import timedelta
 
 from conftest import auth_headers, login
@@ -68,6 +69,15 @@ def test_super_admin_obtiene_url_de_autorizacion(client, super_admin):
     assert SocialOAuthState.query.count() == 1
 
 
+def test_conectar_instagram_usa_su_propia_redirect_uri(client, super_admin):
+    r = client.get('/api/redes-sociales/instagram/conectar', headers=_h(client, super_admin))
+    assert r.status_code == 200
+    fila = SocialOAuthState.query.filter_by(plataforma='instagram').first()
+    assert fila.redirect_uri.endswith('/callback/instagram')
+    assert fila.redirect_uri != os.environ['META_REDIRECT_URI']
+    assert fila.redirect_uri == os.environ['META_INSTAGRAM_REDIRECT_URI']
+
+
 def test_conectar_plataforma_no_soportada(client, super_admin):
     r = client.get('/api/redes-sociales/x/conectar', headers=_h(client, super_admin))
     assert r.status_code == 400
@@ -113,6 +123,23 @@ def test_callback_exitoso_crea_conexion_y_sincroniza(client, super_admin, app, m
     assert conexion.conectada() is True
     assert conexion.conectado_por == super_admin.username
     assert SocialAccount.query.filter_by(plataforma='facebook').count() == 1
+
+
+def test_callback_instagram_exitoso_no_se_confunde_con_facebook(client, super_admin, app, monkeypatch):
+    monkeypatch.setattr('app.services.social.orchestrator.proveedor_para', lambda p: _ProveedorFalso())
+    monkeypatch.setattr('app.routes.api_redes_sociales.endpoints.proveedor_para', lambda p: _ProveedorFalso())
+
+    r_conectar = client.get('/api/redes-sociales/instagram/conectar', headers=_h(client, super_admin))
+    valor_estado = r_conectar.get_json()['url'].split('state=')[1]
+
+    r = client.get(f'/api/redes-sociales/callback/instagram?code=codigo-x&state={valor_estado}')
+    assert r.status_code == 302
+    assert 'conectado=instagram' in r.headers['Location']
+
+    conexion = SocialConnection.query.filter_by(plataforma='instagram').first()
+    assert conexion is not None
+    assert conexion.conectada() is True
+    assert SocialConnection.query.filter_by(plataforma='facebook').first() is None
 
 
 def test_sincronizar_sin_conexion_devuelve_409(client, admin):
