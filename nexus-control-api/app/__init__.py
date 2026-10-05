@@ -235,7 +235,11 @@ def create_app():
 
     os.makedirs(os.path.join(BASE_DIR, 'data'), exist_ok=True)
 
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=1, x_host=1, x_prefix=1)
+    try:
+        saltos_proxy = max(int(os.environ.get('PROXY_FOR_HOPS', '2')), 1)
+    except ValueError:
+        saltos_proxy = 2
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=saltos_proxy, x_proto=1, x_host=1, x_prefix=1)
 
     init_socketio(app)
     return app

@@ -143,6 +143,7 @@ Vive en `nexus-control-android/`, es un proyecto de Android Studio (Kotlin) y ti
 | `nexus-control-android/` | Proyecto de Android Studio (Kotlin) que se instala en celulares y tablets: se enrola con el código, sube su inventario y el catálogo de apps instaladas, y aplica la matriz de control con una pantalla de bloqueo propia de Nexus Obsidian. Tiene su propio README, un `INSTALAR_APK_EN_PC.bat` y un flujo de GitHub Actions que lo compila y le corre las pruebas. |
 | `INICIAR_EN_PC.bat` y `DETENER_EN_PC.bat` | Arrancan y apagan el panel y el servidor con doble clic. |
 | `CONFIGURAR_REDES_SOCIALES.md` | Guía paso a paso, sin dar por hecho que sabes de desarrollo, para dar de alta Facebook, Instagram, TikTok y YouTube en sus paneles de desarrolladores y conectar el módulo de Redes sociales. |
+| `GUIA_MINI_PC.md`, `INSTALAR_EN_MINIPC.bat` y `deploy/appliance/` | Despliegue "enchufar y listo" en un Mini PC con Ubuntu Server: Docker Compose, Cloudflare Tunnel, Tailscale, arranque tras corte de luz, actualización automática desde `git tag` con respaldo y rollback, respaldos y latido de monitoreo. |
 | `scripts/` | Script de PowerShell que crea el `.env` con claves aleatorias (incluye la clave de cifrado de los tokens de redes sociales). |
 | `docs/` | Capturas de las pantallas principales. |
 
@@ -230,7 +231,7 @@ Servidor (con los contenedores levantados):
 docker compose run --rm api python -m pytest -q
 ```
 
-Debes ver `256 passed` (incluye las pruebas del nuevo módulo de Redes sociales con OAuth; una de las pruebas de 2FA espera hasta 30 segundos a propósito, por eso la corrida completa toma unos minutos).
+Debes ver `261 passed` (incluye las pruebas del nuevo módulo de Redes sociales con OAuth; una de las pruebas de 2FA espera hasta 30 segundos a propósito, por eso la corrida completa toma unos minutos).
 
 Frontend:
 

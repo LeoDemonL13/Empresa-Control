@@ -1,0 +1,10 @@
+[Unit]
+Description=Nexus: respaldo de la base de datos
+After=nexus-stack.service
+
+[Service]
+Environment=HOME=/root
+Type=oneshot
+ExecStart=/opt/nexus/scripts/nexus-backup.sh
+TimeoutStartSec=1800
+Nice=15

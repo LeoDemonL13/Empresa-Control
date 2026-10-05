@@ -1,0 +1,11 @@
+[Unit]
+Description=Nexus: buscar y aplicar actualizacion con rollback
+After=nexus-stack.service network-online.target
+Wants=network-online.target
+
+[Service]
+Environment=HOME=/root
+Type=oneshot
+ExecStart=/opt/nexus/scripts/nexus-update.sh
+TimeoutStartSec=1800
+Nice=10

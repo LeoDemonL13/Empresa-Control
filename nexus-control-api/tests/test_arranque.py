@@ -94,3 +94,40 @@ def test_totp_secret_se_guarda_cifrado(app):
     assert crudo != 'JBSWY3DPEHPK3PXP'
     db.session.expire_all()
     assert User.query.one().totp_secret == 'JBSWY3DPEHPK3PXP'
+
+
+def _ip_vista_por_la_app(monkeypatch, saltos):
+    from app import create_app
+
+    if saltos is None:
+        monkeypatch.delenv('PROXY_FOR_HOPS', raising=False)
+    else:
+        monkeypatch.setenv('PROXY_FOR_HOPS', saltos)
+    aplicacion = create_app()
+
+    @aplicacion.route('/_ip_prueba')
+    def _ip_prueba():
+        from flask import request
+        return request.remote_addr or ''
+
+    r = aplicacion.test_client().get(
+        '/_ip_prueba',
+        headers={'X-Forwarded-For': '203.0.113.7'},
+        environ_base={'REMOTE_ADDR': '172.18.0.5'},
+    )
+    return r.get_data(as_text=True)
+
+
+def test_proxyfix_por_defecto_ignora_un_solo_salto(monkeypatch, tmp_path):
+    monkeypatch.setenv('DATABASE_URL', f"sqlite:///{tmp_path / 'a.db'}")
+    assert _ip_vista_por_la_app(monkeypatch, None) == '172.18.0.5'
+
+
+def test_proxyfix_con_un_salto_toma_la_ip_del_cliente(monkeypatch, tmp_path):
+    monkeypatch.setenv('DATABASE_URL', f"sqlite:///{tmp_path / 'b.db'}")
+    assert _ip_vista_por_la_app(monkeypatch, '1') == '203.0.113.7'
+
+
+def test_proxyfix_valor_invalido_cae_al_defecto(monkeypatch, tmp_path):
+    monkeypatch.setenv('DATABASE_URL', f"sqlite:///{tmp_path / 'c.db'}")
+    assert _ip_vista_por_la_app(monkeypatch, 'abc') == '172.18.0.5'

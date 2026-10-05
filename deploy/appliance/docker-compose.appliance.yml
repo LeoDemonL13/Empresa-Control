@@ -1,0 +1,100 @@
+name: nexus
+
+x-registro: &registro
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+services:
+  api:
+    image: ghcr.io/${GHCR_OWNER:?falta GHCR_OWNER}/nexus-api:${NEXUS_TAG:-stable}
+    <<: *registro
+    restart: unless-stopped
+    env_file: /etc/nexus/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379/0
+      SOCKETIO_ASYNC_MODE: gevent
+      FLASK_ENV: production
+      PROXY_FOR_HOPS: "1"
+      TZ: ${TZ:-America/Mexico_City}
+    volumes:
+      - datos_api:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - interna
+
+  web:
+    image: ghcr.io/${GHCR_OWNER:?falta GHCR_OWNER}/nexus-web:${NEXUS_TAG:-stable}
+    <<: *registro
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - interna
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    <<: *registro
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --metrics 0.0.0.0:2000 run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?falta CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - web
+    networks:
+      - interna
+
+  db:
+    image: postgres:18-alpine
+    <<: *registro
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?falta POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?falta POSTGRES_DB}
+      TZ: ${TZ:-America/Mexico_City}
+    command:
+      - postgres
+      - -c
+      - timezone=${TZ:-America/Mexico_City}
+      - -c
+      - max_connections=100
+    volumes:
+      - datos_postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - interna
+
+  redis:
+    image: redis:7-alpine
+    <<: *registro
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - datos_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - interna
+
+networks:
+  interna:
+
+volumes:
+  datos_api:
+  datos_postgres:
+  datos_redis:

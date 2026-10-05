@@ -1,0 +1,9 @@
+[Unit]
+Description=Nexus: latido para el monitor externo
+After=nexus-stack.service
+
+[Service]
+Environment=HOME=/root
+Type=oneshot
+ExecStart=/opt/nexus/scripts/nexus-heartbeat.sh
+TimeoutStartSec=60

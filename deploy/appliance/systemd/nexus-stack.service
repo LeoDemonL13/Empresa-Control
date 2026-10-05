@@ -1,0 +1,16 @@
+[Unit]
+Description=Nexus Obsidian Control (pila de contenedores)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Environment=HOME=/root
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStartSec=900
+ExecStart=/usr/bin/docker compose --env-file /etc/nexus/.env -f /opt/nexus/docker-compose.appliance.yml up -d --remove-orphans
+ExecStop=/usr/bin/docker compose --env-file /etc/nexus/.env -f /opt/nexus/docker-compose.appliance.yml stop
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Nexus: revisar actualizaciones cada 10 minutos
+
+[Timer]
+OnBootSec=5min
+OnUnitInactiveSec=10min
+RandomizedDelaySec=60
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target
