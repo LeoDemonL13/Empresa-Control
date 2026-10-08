@@ -39,9 +39,13 @@ jobs:
         run: |
           $env:NEXUS_CREDENCIALES_PATH = Join-Path $env:RUNNER_TEMP 'sin-enrolar\device.json'
           $env:NEXUS_LOG_PATH = Join-Path $env:RUNNER_TEMP 'sin-enrolar\agente.log'
-          & .\dist\nexus-agente.exe --servicio
-          if ($LASTEXITCODE -ne 2) { Write-Error "Se esperaba codigo 2 y salio $LASTEXITCODE"; exit 1 }
-          Get-Content $env:NEXUS_LOG_PATH
+          $salida = & .\dist\nexus-agente.exe --servicio 2>&1 | Out-String
+          $codigo = $LASTEXITCODE
+          $registro = ''
+          if (Test-Path $env:NEXUS_LOG_PATH) { $registro = (Get-Content $env:NEXUS_LOG_PATH -Raw) }
+          $detalle = ("codigo=$codigo salida=[$salida] registro=[$registro]") -replace "`r?`n", ' | '
+          if ($codigo -ne 2) { Write-Host "::error::$detalle"; exit 1 }
+          Write-Host $detalle
 
       - name: Prueba del instalador y desinstalador
         shell: pwsh
