@@ -10,7 +10,28 @@ Desde la **Fase 4**, además aplica la matriz de control de aplicaciones que se 
 - Cuando un administrador cambia una política desde el panel, el agente la recibe al instante (por WebSocket) y la aplica sin esperar al siguiente ciclo.
 - Si se pierde la conexión con el servidor, el agente sigue aplicando las últimas políticas que conoce y sigue acumulando el uso localmente; en cuanto vuelve la conexión, sincroniza todo.
 
-## Requisitos
+## Instalación en las PC de la empresa (recomendada)
+
+Para producción no uses `INICIAR_AGENTE_EN_PC.bat`: necesita Python, abre una ventana y se detiene al cerrarla. Usa el paquete ya compilado:
+
+1. En GitHub, pestaña **Actions → agente-windows**, abre la última ejecución en verde y descarga el artefacto **nexus-agente-windows** (un .zip). Descomprímelo en la PC (o en una USB para repartirlo).
+2. En el panel: **Equipos → Agregar equipo**, tipo PC, y copia el código (dura 30 minutos).
+3. Doble clic en **`INSTALAR_AGENTE_WINDOWS.bat`**, acepta el permiso de administrador y escribe la dirección del servidor (por ejemplo `https://nexus.miempresa.com`) y el código. También acepta ambos como argumentos: `INSTALAR_AGENTE_WINDOWS.bat https://nexus.miempresa.com CODIGO`.
+4. En menos de un minuto el equipo debe aparecer "En línea". No hace falta Python ni dejar nada abierto.
+
+Qué deja instalado:
+
+- `C:\Program Files\NexusObsidianControl\nexus-agente.exe`, ejecutado por una tarea programada **al encender el equipo**, como SYSTEM, sin ventana, reiniciándose sola cada minuto si se cae.
+- Los datos (credenciales, estado de uso y registro `agente.log`) en `C:\ProgramData\NexusObsidianControl`, accesibles solo para SYSTEM y administradores. Un usuario estándar no puede ver la clave, editar el uso acumulado ni detener el agente; un administrador local sí puede.
+- Para quitarlo: **`DESINSTALAR_AGENTE_WINDOWS.bat`** (después elimina el equipo del panel).
+
+Instalarlo otra vez sobre una PC ya enrolada actualiza el programa y conserva sus credenciales.
+
+El agente cuenta como "tiempo de uso" el tiempo que el programa está abierto como proceso, no el tiempo con la ventana al frente.
+
+Modo de línea de comandos: `nexus-agente.exe --enrolar URL CODIGO` (enrola y termina) y `nexus-agente.exe --servicio` (desatendido, sin preguntas, con registro en archivo).
+
+## Requisitos para el modo de desarrollo (.bat con Python)
 
 - Python 3.11 o superior en el equipo donde se instale.
 - Que el panel y el servidor (`nexus-control-api`) ya estén corriendo y sean alcanzables desde este equipo.
@@ -50,4 +71,4 @@ pip install pytest
 pytest -q
 ```
 
-Debes ver `33 passed`.
+Debes ver `43 passed`.

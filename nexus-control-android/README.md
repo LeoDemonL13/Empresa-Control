@@ -6,16 +6,11 @@ Android no permite cerrar otra app a la fuerza como sí se puede en Windows (eso
 
 No usa permisos de "administrador del dispositivo" ni requiere rootear el celular ni instalar ningún MDM: solo pide activar un Servicio de Accesibilidad (así es como detecta qué app está al frente) y, opcionalmente, permitir que la app funcione sin restricciones de batería.
 
-## Aviso importante sobre esta entrega
+## Estado de verificación
 
-Este proyecto se escribió en un entorno en la nube sin SDK de Android y sin acceso a los servidores de Google (`dl.google.com`, `maven.google.com`) ni a Maven Central, así que **no fue posible compilarlo ni ejecutarlo aquí**, a diferencia del resto de Nexus Obsidian Control (API, panel y agente de Windows), que sí se probó en vivo end-to-end.
-
-Para compensarlo:
-
-- Todo el contrato con el servidor (`/api/agente/enrolar`, `/api/agente/inventario`, `/api/agente/politicas`, `/api/agente/uso`, `/api/agente/apps-instaladas`) se verificó primero en vivo contra el servidor real, simulando con `curl` todo el ciclo de vida de un agente Android, antes de escribir una sola línea de Kotlin.
-- La lógica de negocio que no depende de Android (cuándo bloquear una app, y cómo se calcula qué enviar al servidor sin duplicar minutos) se extrajo a clases Kotlin puras (`Politica.kt`, `CalculoUso.kt`) y se verificó de dos formas: ejecutándola de verdad con el compilador de Kotlin fuera de este proyecto, y con pruebas JUnit reales incluidas en `app/src/test/`.
-- Se agregó un flujo de **GitHub Actions** (`.github/workflows/android-build.yml`) que compila el proyecto completo y corre esas pruebas automáticamente en cuanto subas esta carpeta a GitHub, con runners que sí tienen acceso a los servidores de Google. Es la forma de obtener una verificación real y automática sin depender de este entorno.
-- Recomendamos firmemente hacer una primera prueba completa en un celular real (ver "Probarlo paso a paso" más abajo) antes de instalarlo en los equipos de la empresa.
+- El proyecto **compila** y sus **pruebas unitarias pasan** (`PoliticaTest`, `CalculoUsoTest`) en los servidores de GitHub Actions (ejecución del 8 de octubre de 2026, flujo `android-build`). Eso se hizo con un compilador real de Android, no en el entorno donde se escribió el código.
+- **No se ha ejecutado en un celular ni emulador.** Nadie ha comprobado todavía que el servicio de Accesibilidad detecte bien la app al frente, que la pantalla de bloqueo aparezca, ni el enrolamiento desde la propia app. Eso se verifica con la prueba piloto (ver `PRUEBA_PILOTO.md` en la raíz del proyecto).
+- El contrato con el servidor se verificó en vivo con `curl` contra el servidor real antes de escribir el Kotlin.
 
 ## Qué hace exactamente
 
@@ -94,7 +89,15 @@ Si subes esta carpeta (o todo `nexus-control/`) a un repositorio de GitHub, el f
 2. Entra a la pestaña **Actions** del repositorio.
 3. Busca la ejecución de "Android build"; en verde significa que compiló y las pruebas pasaron. El `.apk` de depuración queda descargable ahí mismo, en "Artifacts".
 
-Este flujo asume que la carpeta `nexus-control-android` está justo en la raíz del repositorio (junto a `.github/`). Si en tu repositorio queda en otra ruta, mueve la carpeta `.github` a la raíz real del repositorio y ajusta la línea `working-directory` y los `paths` del archivo `android-build.yml` a esa ruta.
+El flujo vive en `.github/workflows/android-build.yml` de la raíz del repositorio (GitHub solo lee flujos de ahí). Al terminar, el APK queda en la ejecución, sección **Artifacts**, con el nombre `nexus-obsidian-control-android-debug`.
+
+## ¿Necesito licencia o cuenta de desarrollador?
+
+No para repartirlo a los equipos de la empresa. El APK se instala directamente (`INSTALAR_APK_EN_PC.bat` o copiándolo al celular y permitiendo "instalar apps de orígenes desconocidos"). El APK de depuración que genera el flujo ya viene firmado con una llave de depuración y sirve para la prueba piloto. Para repartirlo de forma definitiva conviene firmar un APK de *release* con tu propia llave (gratis, se crea con `keytool`); guarda esa llave, porque sin ella no podrás actualizar la app instalada.
+
+La cuenta de Google Play (pago único de 25 USD) solo hace falta para publicarla en la tienda, y esta app probablemente no la aprobaría por su uso del Servicio de Accesibilidad.
+
+**Android 13 o superior:** al instalar un APK fuera de la tienda, Android bloquea por defecto activar el Servicio de Accesibilidad ("ajuste restringido"). Solución: Ajustes → Apps → Nexus Obsidian Control → menú de tres puntos → **Permitir ajustes restringidos**; luego ya se puede activar el servicio.
 
 ## Estructura
 

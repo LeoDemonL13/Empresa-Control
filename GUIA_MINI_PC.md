@@ -73,6 +73,22 @@ Archivos (todo en `deploy/appliance/`, más `.github/workflows/release-appliance
 
 ---
 
+### ¿Necesito un dominio?
+
+**Sí, para el acceso público estable por HTTPS** (cuesta alrededor de 10–15 USD al año). Con él los equipos de los clientes, los celulares y los agentes se conectan desde cualquier lugar, sin abrir puertos. También es obligatorio para conectar redes sociales: Facebook, Instagram, TikTok y YouTube exigen una dirección HTTPS pública para el inicio de sesión.
+
+Alternativas, con sus límites:
+
+| Opción | Qué pasa |
+|---|---|
+| Solo red local (sin dominio) | Funciona con `http://IP_DEL_MINIPC`, solo dentro de la oficina. Las redes sociales no se podrían conectar. Esta variante no viene preparada en los archivos de esta guía. |
+| Tailscale en todos los equipos | Sin dominio, pero cada PC y celular debe tener Tailscale instalado. No sirve para las redes sociales ni para páginas públicas de clientes. |
+| Túnel rápido de Cloudflare (sin cuenta) | La dirección es aleatoria y cambia: no sirve para producción. |
+
+El dominio no tiene que ser caro ni especial; cualquiera sirve si lo administras en Cloudflare. Las pruebas piloto de los agentes (`PRUEBA_PILOTO.md`) pueden hacerse en red local sin dominio.
+
+---
+
 ## 3. Preparar el hardware
 
 ### 3.1 BIOS/UEFI (la parte que hace que "se encienda solo")

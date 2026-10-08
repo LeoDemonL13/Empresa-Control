@@ -144,6 +144,7 @@ Vive en `nexus-control-android/`, es un proyecto de Android Studio (Kotlin) y ti
 | `INICIAR_EN_PC.bat` y `DETENER_EN_PC.bat` | Arrancan y apagan el panel y el servidor con doble clic. |
 | `CONFIGURAR_REDES_SOCIALES.md` | Guía paso a paso, sin dar por hecho que sabes de desarrollo, para dar de alta Facebook, Instagram, TikTok y YouTube en sus paneles de desarrolladores y conectar el módulo de Redes sociales. |
 | `GUIA_MINI_PC.md`, `INSTALAR_EN_MINIPC.bat` y `deploy/appliance/` | Despliegue "enchufar y listo" en un Mini PC con Ubuntu Server: Docker Compose, Cloudflare Tunnel, Tailscale, arranque tras corte de luz, actualización automática desde `git tag` con respaldo y rollback, respaldos y latido de monitoreo. |
+| `PRUEBA_PILOTO.md` | Prueba paso a paso con 2 PC y 2 celulares antes de instalar el agente en todos los equipos. |
 | `scripts/` | Script de PowerShell que crea el `.env` con claves aleatorias (incluye la clave de cifrado de los tokens de redes sociales). |
 | `docs/` | Capturas de las pantallas principales. |
 
@@ -241,9 +242,9 @@ npm test
 
 Debes ver `52 passed`.
 
-Agente de Windows (ver el README de `nexus-control-agent/`): `35 passed`.
+Agente de Windows (ver el README de `nexus-control-agent/`): `43 passed`.
 
-Agente de Android (ver el README de `nexus-control-android/`): pruebas JUnit de `PoliticaTest` y `CalculoUsoTest`; no se pudieron ejecutar en este entorno por no tener SDK de Android, pero sí se verificó la misma lógica con el compilador de Kotlin por separado, y quedan listas para correr solas en Android Studio o en GitHub Actions.
+Agente de Android (ver el README de `nexus-control-android/`): pruebas JUnit de `PoliticaTest` y `CalculoUsoTest`; compilan y pasan en GitHub Actions (flujo `android-build`); la app todavía no se ha probado en un celular real.
 
 ## Cambiar el rojo de la marca
 
