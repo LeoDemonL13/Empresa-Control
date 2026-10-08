@@ -1,0 +1,72 @@
+name: agente-windows
+
+on:
+  push:
+    paths:
+      - 'nexus-control-agent/**'
+      - '.github/workflows/agente-windows.yml'
+  workflow_dispatch:
+
+jobs:
+  empaquetar:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: nexus-control-agent
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: nexus-control-agent/requirements.txt
+
+      - run: python -m pip install -r requirements.txt pytest pyinstaller
+
+      - name: Pruebas
+        run: python -m pytest tests -q
+
+      - name: Compilar el ejecutable
+        run: >
+          python -m PyInstaller --onefile --name nexus-agente
+          --collect-submodules socketio --collect-submodules engineio
+          --hidden-import websocket
+          main.py
+
+      - name: El ejecutable arranca y rechaza trabajar sin enrolar
+        shell: pwsh
+        run: |
+          $env:NEXUS_CREDENCIALES_PATH = Join-Path $env:RUNNER_TEMP 'sin-enrolar\device.json'
+          $env:NEXUS_LOG_PATH = Join-Path $env:RUNNER_TEMP 'sin-enrolar\agente.log'
+          & .\dist\nexus-agente.exe --servicio
+          if ($LASTEXITCODE -ne 2) { Write-Error "Se esperaba codigo 2 y salio $LASTEXITCODE"; exit 1 }
+          Get-Content $env:NEXUS_LOG_PATH
+
+      - name: Prueba del instalador y desinstalador
+        shell: pwsh
+        run: |
+          .\instalador\instalar.ps1 -OmitirEnrolamiento -Origen .\dist\nexus-agente.exe
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $tarea = Get-ScheduledTask -TaskName 'NexusObsidianControlAgente'
+          if ($tarea.Principal.UserId -ne 'SYSTEM') { Write-Error 'La tarea no corre como SYSTEM'; exit 1 }
+          if (-not (Test-Path "$env:ProgramFiles\NexusObsidianControl\nexus-agente.exe")) { Write-Error 'Falta el ejecutable instalado'; exit 1 }
+          icacls "$env:ProgramData\NexusObsidianControl"
+          .\instalador\desinstalar.ps1
+          if (Get-ScheduledTask -TaskName 'NexusObsidianControlAgente' -ErrorAction SilentlyContinue) { Write-Error 'La tarea sigue registrada'; exit 1 }
+          if (Test-Path "$env:ProgramFiles\NexusObsidianControl") { Write-Error 'Quedaron archivos instalados'; exit 1 }
+
+      - name: Armar el paquete
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path paquete\instalador | Out-Null
+          Copy-Item dist\nexus-agente.exe paquete\
+          Copy-Item INSTALAR_AGENTE_WINDOWS.bat, DESINSTALAR_AGENTE_WINDOWS.bat paquete\
+          Copy-Item instalador\*.ps1 paquete\instalador\
+          Copy-Item README.md paquete\LEEME.md
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nexus-agente-windows
+          path: nexus-control-agent/paquete
+          if-no-files-found: error

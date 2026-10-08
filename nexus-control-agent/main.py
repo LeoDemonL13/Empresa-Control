@@ -1,11 +1,12 @@
+import argparse
 import sys
 import threading
 import time
 
-from agent import config, monitor_uso
+from agent import config, monitor_uso, registro
 from agent.cliente_api import ClienteAPI, ErrorAPI
 from agent.cliente_socket import crear_cliente
-from agent.enrolamiento import asegurar_credenciales
+from agent.enrolamiento import SinCredenciales, asegurar_credenciales, enrolar
 from agent.inventario import recolectar
 from agent.politicas import enviar_uso_acumulado, refrescar_politicas
 
@@ -34,11 +35,45 @@ def _bucle_sincronia(cliente: ClienteAPI, detener: threading.Event):
             print(f'No se pudo enviar el uso acumulado: {e}')
 
 
-def main():
+def latir_seguro(latir) -> bool:
+    try:
+        latir()
+        return True
+    except Exception as e:
+        print(f'No se pudo enviar la señal de vida, se reintenta: {e}')
+        return False
+
+
+def _leer_argumentos(argv):
+    parser = argparse.ArgumentParser(description='Agente de Nexus Obsidian Control')
+    parser.add_argument('--enrolar', nargs=2, metavar=('URL', 'CODIGO'), help='Enrola este equipo sin pedir datos y termina')
+    parser.add_argument('--servicio', action='store_true', help='Modo desatendido: sin preguntas y con registro en archivo')
+    return parser.parse_args(argv)
+
+
+def main(argv=None):
+    argumentos = _leer_argumentos(argv)
+
+    if argumentos.servicio or argumentos.enrolar:
+        registro.redirigir_salida()
+
     print(f'Nexus Obsidian Control - Agente v{config.AGENTE_VERSION}')
 
+    if argumentos.enrolar:
+        url, codigo = argumentos.enrolar
+        try:
+            _, _, _, nombre = enrolar(url, codigo)
+        except ErrorAPI as e:
+            print(f'No se pudo enrolar el equipo: {e}')
+            sys.exit(1)
+        print(f"Enrolado como '{nombre}'.")
+        return
+
     try:
-        equipo_id, api_key, api_base_url = asegurar_credenciales()
+        equipo_id, api_key, api_base_url = asegurar_credenciales(interactivo=not argumentos.servicio)
+    except SinCredenciales as e:
+        print(f'{e} Ejecuta el instalador o usa --enrolar URL CODIGO.')
+        sys.exit(2)
     except ErrorAPI as e:
         print(f'No se pudo enrolar el equipo: {e}')
         sys.exit(1)
@@ -94,7 +129,7 @@ def main():
 
     try:
         while True:
-            latir()
+            latir_seguro(latir)
             time.sleep(config.INTERVALO_HEARTBEAT_SEGUNDOS)
     except KeyboardInterrupt:
         print('\nDeteniendo el agente...')
