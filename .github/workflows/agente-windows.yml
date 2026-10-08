@@ -37,13 +37,16 @@ jobs:
       - name: El ejecutable arranca y rechaza trabajar sin enrolar
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Continue'
           $env:NEXUS_CREDENCIALES_PATH = Join-Path $env:RUNNER_TEMP 'sin-enrolar\device.json'
           $env:NEXUS_LOG_PATH = Join-Path $env:RUNNER_TEMP 'sin-enrolar\agente.log'
-          $salida = & .\dist\nexus-agente.exe --servicio 2>&1 | Out-String
-          $codigo = $LASTEXITCODE
+          $proceso = Start-Process -FilePath (Resolve-Path .\dist\nexus-agente.exe) -ArgumentList '--servicio' -Wait -PassThru -NoNewWindow -RedirectStandardOutput "$env:RUNNER_TEMP\so.txt" -RedirectStandardError "$env:RUNNER_TEMP\se.txt"
+          $codigo = $proceso.ExitCode
+          $so = Get-Content "$env:RUNNER_TEMP\so.txt" -Raw -ErrorAction SilentlyContinue
+          $se = Get-Content "$env:RUNNER_TEMP\se.txt" -Raw -ErrorAction SilentlyContinue
           $registro = ''
           if (Test-Path $env:NEXUS_LOG_PATH) { $registro = (Get-Content $env:NEXUS_LOG_PATH -Raw) }
-          $detalle = ("codigo=$codigo salida=[$salida] registro=[$registro]") -replace "`r?`n", ' | '
+          $detalle = ("codigo=$codigo stdout=[$so] stderr=[$se] registro=[$registro]") -replace "`r?`n", ' | '
           if ($codigo -ne 2) { Write-Host "::error::$detalle"; exit 1 }
           Write-Host $detalle
 
